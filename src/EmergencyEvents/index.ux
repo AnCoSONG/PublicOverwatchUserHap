@@ -1,0 +1,162 @@
+<template>
+  <!-- Only one root node is allowed in template. -->
+  <div class="container">
+    <div class="hero">
+      <text class="title">
+        {{this.accidents===null?0:this.accidents.length}}项紧急事件
+      </text>
+      <div class="btn" onclick="getIntoMap">
+        <text class="btn-text">进入室内地图查看详情</text>
+      </div>
+    </div>
+    <div class="main">
+      <div class="emergency_events" if="{{this.accidents!==null}}">
+        <div class="emergency_item" for="{{this.accidents}}">
+          <text class="emergency_title">事件:{{$item.description}}</text>
+          <text class="emergency_place">地点:{{$item.position}}</text>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+  .btn {
+    width: 50%;
+    height: 80px;
+    border-radius: 40px;
+    background-color: white;
+    border: 4px solid #ddd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+  }
+  .btn-text {
+    color:#333;
+    font-weight: 700;
+    font-size: 30px;
+  }
+  .container {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-content: center;
+    align-items: center;
+  }
+
+  .hero {
+    background-color: #008df8;
+    height: 400px;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .title {
+    font-size: 75px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 10px;
+  }
+
+  .main {
+    background-color: white;
+    padding: 30px;
+    /* padding-top: 100px; */
+    width: 100%;
+    margin-top: -30px;
+    border-top-right-radius: 30px;
+    border-top-left-radius: 30px;
+    justify-content: space-around;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .emergency_events {
+    width: 90%;
+    background-color: white;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    flex-direction: column;
+    /* border-radius: 30px;
+      border: 5px solid #008df8; */
+  }
+
+  .emergency_item {
+    border: 5px solid #ccc;
+    border-radius: 30px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+    padding: 30px;
+    justify-content: space-around;
+    flex-direction: column;
+  }
+  .emergency_item .emergency_title {
+    font-size: 50px;
+    font-weight: 600;
+    /* color:#111; */
+  }
+
+  .emergency_item .emergency_place {
+    font-size: 30px;
+    font-weight: 600;
+  }
+</style>
+
+<script>
+  import router from '@system.router';
+  import fetch from '@system.fetch';
+  import { baseUrl } from '../const.js' 
+  module.exports = {
+    public: {
+      accidents: null
+    },
+
+    onInit: async function () {
+      if (this.accidents === null) {
+        //后台或者卡片打开
+        let res = await fetch.fetch({
+          url: `${baseUrl}/getCurrentAccidents`
+        }).catch(err => {
+          console.error(err);
+        })
+
+        let result = res.data
+        if (result.code === 200) {
+          this.accidents = JSON.parse(result.data)
+        } else {
+          console.log("ERROR GCA");
+          this.accidents = [];
+        }
+      } else {
+        // 正常打开
+        this.accidents = JSON.parse(this.accidents);
+        console.log(JSON.stringify(this.accidents));
+      }
+    },
+
+    onShow: function () {
+      console.log("show");
+      this.$page.setTitleBar({
+        text: "紧急事件列表",
+        backgroundColor: '#008df8'
+      });
+    },
+		getIntoMap: function() {
+      router.push({
+        uri: '/Indoor',
+        params: {routeFrom:'EmergencyEvents'},
+        success: function () {
+          console.log('launchApp success .');
+        },
+        fail: function (error) {
+          console.log('launchApp fail :' + error.message);
+        },
+        complete: function () {
+          console.log('launchApp complete.');
+        }
+      })
+    }
+  }
+</script>

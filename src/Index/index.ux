@@ -1,0 +1,1076 @@
+<import name="user_card" src="../common/library/user_card/user_card.ux"></import>
+<template>
+  <!-- Only one root node is allowed in template. -->
+  <div class="container">
+    <tabs onchange="onTabIdxChange">
+      <tab-content>
+        <div class="homepage">
+          <div class="hero {{emergency_type===1?'':'emergency'}}">
+            <div class="text-part">
+              <text class="greatings">{{this.$tc('message.index.greatings',emergency_type)}}</text>
+              <text class="desc">{{$tc('message.index.desc',emergency_type)}}</text>
+            </div>
+            <div class="pic-part">
+              <image src="{{emergency_type===1?'../Common/safety.svg':'../Common/error.svg'}}"></image>
+            </div>
+          </div>
+          <div class="main">
+            <image src="../Common/refresh.svg" class="refresh {{refreshing?'refreshing':''}}" onclick="refreshInfo()"></image>
+            <div class="htsitem" onclick="activateService()">
+              <text class="hts-title">{{$t('message.index.htslist.first')}}</text>
+              <text class="hts-status">{{status?"启用":"未启用"}}</text>
+            </div>
+            <div class="htsitem" onclick="routeTo('EmergencyEvents')">
+              <text class="hts-title">{{$t('message.index.htslist.second')}}</text>
+              <text class="hts-status">{{accidents.length===0?"无":$t('message.index.htslist.accidents',[accidents.length])}}</text>
+            </div>
+            <div class="htsitem">
+              <text class="hts-title">{{$t('message.index.htslist.third')}}</text>
+              <text class="hts-status">{{inner_pos}}</text>
+            </div>
+            <div class="htsitem">
+              <text class="hts-title">{{$tc('message.index.htslist.forth')}}</text>
+              <text class="hts-status">{{ht_level}}</text>
+            </div>
+            <div class="htsitem">
+              <text class="hts-title">{{$tc('message.index.htslist.fifth')}}</text>
+              <image src="../Common/right.svg" class="hts-btn" onclick="routeTo('Indoor')"></image>
+            </div>
+            <div class="htsitem">
+              <text class="hts-title">{{$tc('message.index.htslist.sixth')}}</text>
+              <image src="../Common/right.svg" class="hts-btn" onclick="routeTo('Urgency')"></image>
+            </div>
+          </div>
+
+        </div>
+        <div class="me">
+          <div class="hero {{emergency_type===1?'':'emergency'}}">
+            <!-- <div class="realuser"></div> -->
+            <!-- <image src="https://avatars.dicebear.com/v2/identicon/user.svg" class="realuser"></image> -->
+            <image src="../Common/user.svg" class="avatar"></image>
+            <text class="username">{{username}}</text>
+          </div>
+          <div class="main">
+            <div class="getVip">
+              <!-- 美化 -->
+              <div class="circle"></div>
+              <div class="leftContent">
+                <text class="VIP">VIP</text>
+                <text class="status">{{isVIP?"已开通":"未开通"}}</text>
+              </div>
+              <div class="rightContent">
+                <list class="advantages" id="advantages">
+                  <block for="vipAdvantages">
+                    <list-item type="advantage" class="advantage">
+                      <text class="slogen">{{$item}}</text>
+                    </list-item>
+
+                  </block>
+                </list>
+                <div class="joinVip">
+                  <text class="joinText" onclick="joinVIP">{{isVIP?"取消":"开通"}}</text>
+                </div>
+              </div>
+            </div>
+            <div class="htsitem">
+              <div class="t_d">
+                <text class="hts-title">{{$t('message.index.settings.first.title')}}</text>
+                <text class="hts-desc">{{$t('message.index.settings.first.desc')}}</text>
+              </div>
+              <switch onchange="onCardServiceChange"></switch>
+            </div>
+            <div class="htsitem">
+              <div class="t_d">
+                <text class="hts-title">{{$t('message.index.settings.second.title')}}</text>
+                <text class="hts-desc">{{$t('message.index.settings.second.desc')}}</text>
+              </div>
+              <switch onchange="onUrgentPushChange"></switch>
+            </div>
+            <div class="htsitem">
+              <div class="t_d">
+                <text class="hts-title">{{$t('message.index.settings.forth.title')}}</text>
+                <text class="hts-desc">{{$t('message.index.settings.forth.desc')}}</text>
+              </div>
+              <switch onchange="onRoundtripChanged"></switch>
+            </div>
+            <div class="htsitem">
+              <div class="t_d">
+                <text class="hts-title">{{$t('message.index.settings.fifth.title')}}</text>
+                <text class="hts-desc">{{$t('message.index.settings.fifth.desc')}}</text>
+              </div>
+              <switch onchange="onDevMode"></switch>
+            </div>
+
+            <div class="htsitem">
+              <text class="hts-title">{{$t('message.index.settings.third.title')}}</text>
+              <!-- <text class="hts-desc">{{$t('message.index.settings.second.desc')}}</text> -->
+              <image src="../Common/right.svg" class="hts-btn" onclick="showAbout()"></image>
+            </div>
+          </div>
+        </div>
+      </tab-content>
+      <tab-bar class="tab-container">
+        <div class="tab-content" for="{{tablist}}">
+          <image class="tab-img" src="{{$item.render?$item.curl:$item.nurl}}"></image>
+          <text class="tab-text">{{$item.title}}</text>
+        </div>
+      </tab-bar>
+    </tabs>
+
+  </div>
+</template>
+
+<style>
+  .container,
+  .homepage,
+  .me {
+    flex-direction: column;
+    /* justify-content: center; */
+    align-items: center;
+  }
+  .homepage,
+  .me {
+    width: 100%;
+  }
+
+  .title {
+    font-size: 50px;
+    color: #fff;
+  }
+
+  .text-part {
+    flex-direction: column;
+    /* margin-left: 30px; */
+  }
+  .greatings {
+    font-size: 100px;
+    color: #fff;
+
+    font-weight: 600;
+    letter-spacing: 5px;
+  }
+  .desc {
+    color: #fff;
+  }
+  .hero {
+    background-color: #008df8;
+    height: 400px;
+    width: 100%;
+    align-items: center;
+    justify-content: space-around;
+  }
+
+  .emergency {
+    background-color: #EC6A6A;
+  }
+
+  .main {
+    background-color: white;
+    padding: 30px;
+    /* padding-top: 100px; */
+    width: 100%;
+    margin-top: -30px;
+    border-top-right-radius: 30px;
+    border-top-left-radius: 30px;
+    justify-content: space-around;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .htsitem {
+    width: 95%;
+    height: 120px;
+    background-color: white;
+    border: 5px solid #ccc;
+    border-radius: 20px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-left: 30px;
+    padding-right: 30px;
+    margin-top: 50px;
+  }
+
+  .htsitem .hts-title,
+  .htsitem .hts-status {
+    font-weight: 600;
+  }
+
+  .htsitem .hts-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .tab-container {
+    height: 120px;
+    border-top-width: 1px;
+    border-color: #bbbbbb;
+    background-color: #ffffff;
+    justify-content: space-around;
+  }
+
+  .tab-content {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .tab-img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .tab-text {
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .avatar {
+    width: 256px;
+    height: 256px;
+  }
+
+  .realuser {
+    width: 256px;
+    height: 256px;
+    border-radius: 128px;
+    border: 2px solid #ddd;
+    background-image: url("https://avatars.dicebear.com/v2/identicon/user.svg");
+  }
+
+  .me .hero {
+    flex-direction: column;
+    justify-content: center;
+    height: 480px;
+  }
+
+  .me .main .getVip {
+    background: linear-gradient(to right, #434343 0%, black 100%);
+    /* background: linear-gradient(to right, #868f96 0%, #596164 100%); */
+    height: 100px;
+    width: 95%;
+    margin-top: 20px;
+    /* margin-bottom: 20px; */
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-left: 30px;
+    padding-right: 30px;
+  }
+
+  .me .main .getVip .circle {
+    position: absolute;
+    top: -30px;
+    left: -300px;
+    border-radius: 200px;
+    width: 600px;
+    height: 600px;
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .me .main .getVip .leftContent {
+    width: 200px;
+    display: flex;
+    align-items: center;
+  }
+
+  .me .main .getVip .rightContent {
+    width: 70%;
+    /* background-color: white; */
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .me .main .getVip .leftContent .VIP {
+    font-size: 38px;
+    font-weight: 700;
+    color: #fcf4ab;
+    margin-right: 10px;
+    letter-spacing: 4px;
+  }
+
+  .me .main .getVip .leftContent .status {
+    font-size: 18px;
+    color: #fcf4ab;
+    letter-spacing: 2px;
+  }
+
+  .me .main .getVip .rightContent .advantages {
+    height: 60px;
+  }
+
+  .me .main .getVip .rightContent .advantages .advantage {
+    height: 60px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .me .main .getVip .rightContent .advantages .advantage .slogen {
+    line-height: 60px;
+    /* font-size: 40px; */
+    font-size: 24px;
+    letter-spacing: 2px;
+    color: #fcf4ab;
+  }
+
+  .me .main .getVip .rightContent .joinVip {
+    width: 120px;
+    background-color: #fcf4ab;
+    border-radius: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80%;
+    margin-left: 20px;
+  }
+
+  .me .main .getVip .rightContent .joinVip .joinText {
+    font-size: 24px;
+    color: #111;
+    letter-spacing: 2px;
+  }
+
+  .username {
+    font-size: 50px;
+    color: #fff;
+    letter-spacing: 10px;
+    font-weight: 600;
+    /*
+            border-bottom: 5px solid #fff;
+            padding-left: 20px;
+            padding-right: 20px; 
+            */
+  }
+
+  .t_d {
+    flex-direction: column;
+  }
+
+  .t_d .hts-desc {
+    font-size: 20px;
+  }
+
+  .refresh {
+    height: 32px;
+    width: 32px;
+    position: absolute;
+    right: 25px;
+    top: 25px;
+  }
+
+  .refreshing {
+    animation-name: Rotate;
+    animation-duration: 1s;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+  }
+  @keyframes Rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+
+<script>
+  import router from '@system.router';
+  import card from '@system.card';
+  import prompt from '@system.prompt';
+  import bluetooth from '@system.bluetooth';
+  import fetch from '@system.fetch';
+  import resident from '@system.resident';
+  import bt from '../Common/bt_next.js';
+  import notification from '@system.notification'
+  import geolocation from '@system.geolocation'
+  import storage from '@system.storage';
+  import { globalData, baseUrl } from '../const.js'
+
+  console.log(baseUrl);
+
+  module.exports = {
+    data: {
+      componentData: {},
+      emergency_type: 1, //1 是无紧急 0 是紧急
+      status: false,
+      inner_pos: "未知",
+      ht_level: "未知",
+      accidents: [],
+
+      refreshing: false,
+
+      pos_detail: null,
+
+      first_in: false,
+
+
+      //tab related
+      tablist: [
+        {
+          title: '首页',
+          render: false,
+          nurl: '../Common/home_nnor.png',
+          curl: '../Common/home_bcho.png'
+        },
+        {
+          title: '我的',
+          render: false,
+          nurl: '../Common/mine_nnor.png',
+          curl: '../Common/mine_bcho.png'
+        }
+      ],
+
+      // User And Settings Related
+      username: '游客',
+      vipAdvantages: [
+        '超值权益，速来体验!',
+        '现在开通9折起!',
+        '超多店铺优惠等你拿!'
+      ],
+      vipAdvantagesIdx: 0,
+      isVIP: false,
+
+      cardService: false,
+      urgentPush: false,
+      roundtrip: false,
+      //轮询intervalid
+      intervalid: null
+    },
+    onInit() {
+      console.log(global);
+
+      this.$page.setTitleBar({
+        text: this.$t('message.index.title')
+      });
+      if (typeof this.accidents === "string") {
+        this.status = true; //只要检测卡片进入默认启用服务
+        this.accidents = JSON.parse(this.accidents);
+        console.log(JSON.stringify(this.accidents));
+        if (this.accidents.length > 0) {
+          this.emergency_type = 0
+          this.$page.setTitleBar({
+            backgroundColor: '#EC6A6A'
+          })
+        } else {
+          this.emergency_type = 1
+          this.$page.setTitleBar({
+            backgroundColor: '#008DF8'
+          })
+        }
+      }
+
+      if (typeof this.inner_pos === "string") {
+        if (this.inner_pos !== "未知") {
+          this.status = true; //只要检测卡片进入默认启用服务
+          this.pos_detail = JSON.parse(this.inner_pos)
+          this.inner_pos = this.pos_detail.position;
+          console.log(JSON.stringify(this.pos_detail))
+
+        }
+      }
+
+      // let res = await fetch.fetch({
+      //   url: `${baseUrl}/getCurrentNumById?id=1`
+      // }).catch(err => {
+      //   console.log("handling fail, err = " + err);
+      // })
+
+      // const result = res.data
+      // console.log(result.data)
+      // this.ht_level = result.data
+
+      // setInterval(() => {
+      //   //需要等待启用之后用蓝牙刷新当前位置
+      //   if(this.status){
+      //     //打开蓝牙进行搜索
+      //     bluetooth.openAdapter({
+      //       operateAdapter: true,
+      //       success: function () {
+      //         console.log('handling success');
+      //       },
+      //       fail: function (data, code) {
+      //         console.log('handling fail, code = ' + code);
+      //       },
+      //       complete: function () {
+      //         console.log('complete');
+      //       }
+      //     });
+      //   }
+
+      // }, 1000);
+      // 华为ide不支持
+      // resident.start({
+      //   desc: '备份进度 30%'
+      // })
+      console.log("checkstate")
+      // 不支持华为环境
+      // card.checkState({
+      //   path: 'Card/infocard',
+      //   success: function(res){
+      //     console.log("success checked", res)
+      //   },
+      //   fail: function(info){
+      //     console.error("failed", info);
+      //     card.add({
+      //       path: 'Card/infocard',
+      //       description: '请订阅卡片',
+      //       illustration: '../Common/camera.png',
+      //       success: function(res){
+      //         console.log("成功订阅", res);
+      //       },
+      //       fail: function(err){
+      //         console.log("失败订阅",err);
+      //       }
+      //     })
+      //   }
+      // })
+
+
+    },
+
+    onReady(options) {
+      //检测vip权限
+      let that = this;
+      storage.get({
+        key: 'isVIP',
+        success: function (data) {
+          that.isVIP = data;
+        },
+        fail: function (data, code) {
+          console.log(`handling fail, code = ${code}`)
+        }
+      })
+      //vip特权轮询
+      console.log("Page Ready")
+      setInterval(() => {
+        // console.log("switch")
+        this.vipAdvantagesIdx++;
+        this.vipAdvantagesIdx %= 3;
+        this.$element('advantages').scrollTo({ index: this.vipAdvantagesIdx });
+      }, 3000)
+    },
+
+    onShow: function () {
+      console.log("show");
+      this.$page.setTitleBar({
+        text: this.$t('message.index.title'),
+        backgroundColor: this.emergency_type === 1 ? '#008df8' : '#EC6A6A'
+      });
+    },
+
+    onHide: function () {
+      //resident.start({
+      //   desc: '备份进度 30%'
+      // })
+      notification.show({
+        contentTitle: '查看当前安全事件',
+        clickAction: {
+          uri: '/EmergencyEvents'
+        }
+      })
+    },
+
+    routeTo(pagename) {
+      if (this.inner_pos === '未知' && pagename !== 'Indoor') {
+        prompt.showToast({
+          message: '请至少获取一次您的位置信息',
+          duration: 1000,
+        })
+        return;
+      }
+      router.push({
+        uri: `/${pagename}`,
+        params: { inner_pos: this.pos_detail, accidents: this.accidents, lightMode: global.lightMode },
+        success: function () {
+          console.log('launchApp success .');
+        },
+        fail: function (error) {
+          console.log('launchApp fail :' + error.message);
+        },
+        complete: function () {
+          console.log('launchApp complete.');
+        }
+      })
+    },
+    activateService: function () {
+      //启动服务
+      this.status = !this.status;
+      if (this.status) {
+
+        this.refreshInfo();
+      }
+      //启动服务将开启蓝牙并进行数据轮询获取
+      // if (this.status) {
+      //   //打开蓝牙进行搜索
+      //   bluetooth.openAdapter({
+      //     operateAdapter: true,
+      //     success: function () {
+      //       console.log('handling success');
+      //     },
+      //     fail: function (data, code) {
+      //       console.log('handling fail, code = ' + code);
+      //     },
+      //     complete: function () {
+      //       console.log('complete');
+      //     }
+      //   });
+      // } else {
+      //   bluetooth.closeAdapter({
+      //     operateAdapter: false,
+      //     success: function () {
+      //       console.log('handling success');
+      //     },
+      //     fail: function () {
+      //       console.log('handling fail');
+      //     }
+      //   })
+      // }
+    },
+
+    onLightMapEnabled: function (val) {
+      global.lightMode = val.checked;
+      console.log("启用浅色主题", global.lightMode)
+    },
+
+    onCardServiceChange: function (val) {
+      this.cardService = val.checked;
+      console.log("卡片服务", this.cardService)
+      // prompt.showToast({
+      //   message:"暂不支持订阅"
+      // })
+      prompt.showToast({
+        message: "当前由于OPPO快应用政策\n尚未支持,请联系开发者",
+        duration: 1000
+      })
+    },
+
+    onUrgentPushChange: function (val) {
+      this.urgentPush = val.checked;
+      console.log("紧急推送", this.urgentPush)
+      prompt.showToast({
+        message: "当前由于OPPO快应用政策\n尚未支持,请联系开发者",
+        duration: 1000
+      })
+    },
+
+    onRoundtripChanged: function (val) {
+      console.log("Round trip checked:", val.checked)
+      this.roundtrip = val.checked;
+      if (this.roundtrip) {
+        console.log("In Interval");
+        let that = this;
+        that.refreshInfo()
+        this.intervalid = setInterval(() => {
+          console.log("In Interval");
+          that.refreshInfo()
+        }, 15000);
+      } else {
+        clearInterval(this.intervalid)
+      }
+    },
+
+    // settings
+    // activateSetting(name) {
+    //   if (name === "card") {
+    //     this.cardService = !this.cardService;
+    //     console.log(this.cardService)
+    //   } else if (name === "urgent") {
+    //     this.urgentPush = !this.urgentPush;
+    //     console.log(this.urgentPush)
+    //   }
+    // },
+
+
+    showAbout() {
+      prompt.showDialog({
+        title: '关于开发者',
+        message: '一些介绍的话',
+        buttons: [
+          {
+            text: '确认',
+            color: '#008df8'
+          }
+        ],
+      })
+    },
+
+
+
+    onTabIdxChange(evt) {
+      this.$page.setTitleBar({
+        text: this.tablist[evt.index].title,
+        backgroundColor: this.emergency_type === 1 ? "#008DF8" : '#EC6A6A'
+      })
+      this.modifyListItemData(evt.index)
+    },
+    modifyListItemData(index) {
+      this.tablist.forEach(element => {
+        element.render = false
+      });
+      this.tablist[index].render = true
+    },
+    refreshInfo: async function () {
+      // console.log("开始刷新");
+      if (!this.status) {
+        prompt.showToast({
+          message: '请先启动服务',
+          duration: 1000,
+          // gravity: 'center'
+        })
+        return false;
+      }
+      if (!this.refreshing) {
+        prompt.showToast({
+          message: '开始刷新',
+          duration: 2000,
+          // gravity: 'center'
+        })
+        this.refreshing = true;
+
+        // 第0步：检测是否在建筑周围
+        // 第一次检测到进入建筑则发送通知
+        // 第一次检测到离开建筑也发送通知
+        geolocation.getLocationType({
+          success: function (data) {
+            console.log(`handling success: locationType = ${data.types}`)
+          },
+          fail: function (data, code) {
+            console.log(`handling fail, code = ${code}`)
+          }
+        })
+        let geoPos = await this.getLocationPromise().catch(err => { console.log("Get Location err = ", err); })
+        console.log("Get Location Res = ", geoPos)
+        // geoPos = {
+        //   latitude: '30.55517',
+        //   longitude: '104.002715'
+        // }
+        if (typeof geoPos === "undefined") {
+          geoPos = {
+            latitude: '30.55517',
+            longitude: '104.002715'
+          }
+        } else if (typeof geoPos === "string") {
+          geoPos = JSON.parse(geoPos)
+          prompt.showToast({
+            message: `您拿到了Location信息:${geoPos.latitude}, ${geoPos.longitude}`,
+            duration: 2000
+          })
+        }
+        // GEO BASEPOINT MODEL ALREADY DEPERACTED!
+        console.log("start to Get BasePoints")
+        console.log(baseUrl);
+        let basePoints = await fetch.fetch({
+          url: `${baseUrl}/getBasePoints`
+        }).catch(err => { console.log("Handling failed events, err = ", err); })
+        console.log(basePoints)
+        if (basePoints.data.code === 200) {
+          console.log("成功获取basepoints")
+          basePoints = JSON.parse(basePoints.data.data)
+        } else {
+          console.log("Error when get basepoints")
+          return false
+        }
+
+        // ------------------
+
+        let isIn = this.isInbuilding(basePoints, geoPos)
+        console.log(isIn)
+
+        // isIn = true; //调试用
+        if (!isIn) {
+          console.log("您不在楼内")
+          if (this.first_in) {
+            prompt.showToast({
+              message: '您已离开Overwatch监控的建筑',
+              duration: 2000
+            })
+            this.first_in = false;
+          } else {
+            prompt.showToast({
+              message: '您不在Overwatch监控的建筑内',
+              duration: 2000
+            })
+          }
+          this.refreshing = false;
+          // prompt.showToast({
+          //   message: '刷新完成',
+          //   duration: 500,
+          //   // gravity: 'center'
+          // });
+          this.inner_pos = "未知";
+          this.emergency_type = 1;
+          this.ht_level = "未知";
+          this.accidents = [];
+          this.pos_detail = null;
+          return false;
+        } else {
+          if (!this.first_in) {
+
+            prompt.showToast({
+              message: '您已进入Overwatch监控的建筑',
+              duration: 2000
+            })
+            notification.show({
+              contentTitle: `您已经进入Overwatch监控的建筑`,
+              contentText: '点此查看详细',
+              clickAction: {
+                uri: '/'
+              }
+            })
+
+            this.first_in = true;
+          }
+        }
+
+
+        //第一步刷新蓝牙列表拿到id
+        let id;
+        if (global.productiontip === "dev") {
+
+          id = 76638;
+          prompt.showToast({
+            message: `cameraid:${id}`
+          })
+          await this.universalRefreshProcess(id);
+        } else {
+          //生产环境需要真实的通过蓝牙获取id
+          id = 2;
+          bt(bluetooth, this.universalRefreshProcess.bind(this))
+          console.log("AFTER BT() ")
+        }
+
+
+
+
+
+      } else {
+        prompt.showToast({
+          message: '正在刷新',
+          duration: 500,
+          // gravity: 'center'
+        })
+      }
+    },
+
+    async universalRefreshProcess(val) {
+      console.log("val type:", typeof val)
+      let id;
+      if (typeof val === 'number') {
+        id = val;
+      } else if (typeof val === 'object') {
+        id = val[0].camera_id;
+      }
+      //第二步用得到的id开始获取自身位置,存入pos_detail中，pos_detail将作为参数传入下一级页面中
+      console.log("拿取自身位置")
+      let res = await fetch.fetch({
+        url: `${baseUrl}/getCamera?id=${id}`
+      }).catch(err => { console.log("handling fail, err = " + err); })
+
+      let result = res.data
+      if (result.code === 200) {
+        console.log(result.data);
+        this.pos_detail = JSON.parse(result.data);
+        this.inner_pos = this.pos_detail.position
+
+      } else {
+        console.log("ERROR POS");
+      }
+
+      // 拿取人流量情况
+      console.log("拿取当前人流量")
+      res = await fetch.fetch({
+        url: `${baseUrl}/getCurrentNumById?id=${id}`
+      }).catch(err => {
+        console.log("handling fail, err = " + err);
+      })
+
+      result = res.data
+      if (result.code === 200) {
+        console.log(result.data)
+        this.ht_level = result.data
+      } else {
+        console.log("ERROR HT");
+      }
+
+      // 获取整个楼的紧急事件
+      res = await fetch.fetch({
+        url: `${baseUrl}/getCurrentAccidents`
+      }).catch(err => {
+        console.log("handling fail, err = " + err);
+      })
+
+      result = res.data
+      if (result.code === 200) {
+
+        this.accidents = JSON.parse(result.data)
+        if (global.productiontip === "dev") {
+          //this.accidents = []
+        }
+        if (this.accidents.length > 0) {
+          this.emergency_type = 0
+          this.$page.setTitleBar({
+            backgroundColor: '#EC6A6A'
+          })
+          notification.show({
+            contentTitle: `您所在的建筑有${this.accidents.length}项紧急事件!`,
+            contentText: '点此查看',
+            clickAction: {
+              uri: '/EmergencyEvents'
+            }
+          })
+        } else {
+          this.emergency_type = 1
+          this.$page.setTitleBar({
+            backgroundColor: '#008DF8'
+          })
+        }
+      } else {
+        console.log("ERROR ACC");
+      }
+      // 刷新完成
+      this.refreshing = false;
+      prompt.showToast({
+        message: '刷新完成',
+        duration: 500,
+        // gravity: 'center'
+      })
+    },
+
+    getLocationPromise() {
+      console.log("Start To Get Location");
+      console.log(baseUrl);
+      //首先调用地理位置接口
+      return new Promise((resolve, reject) => {
+        geolocation.getLocation({
+          timeout: 3000,
+          success: function (data) {
+
+            console.log(
+              `handling success: longitude = ${data.longitude}, latitude = ${
+              data.latitude
+              }`
+            )
+            resolve(data)
+          },
+          fail: function (data, code) {
+            console.log(`handling fail, code = ${code} data = ${data}`)
+            reject(code)
+          }
+        })
+      })
+
+    },
+
+    isInbuilding(basepoints, geoPos) {
+      console.log("Is In Building");
+      console.log(JSON.stringify(basepoints))
+      console.log(JSON.stringify(geoPos));
+      // console.log("In Building");
+      let left_vertical = false;
+      let top_horizontal = false;
+      let latitude = geoPos.latitude;
+      let longitude = geoPos.longitude;
+      let canvas_x = 0; // 对应到canvas坐标系中的x
+      let canvas_y = 0; // 对应到canvas坐标系中的y
+      let lb = basepoints[0]
+      let rb = basepoints[1]
+      let lt = basepoints[2]
+      let rt = basepoints[3]
+      let k1, b1, k2, b2;
+      k1 = (lt[0] - lb[0]) / (lt[1] - lb[1]);
+      k2 = (lt[0] - rt[0]) / (lt[1] - rt[1]);
+      b1 = (lb[1] - k1 * lb[0])
+      b2 = (lt[1] - k2 * lt[0])
+
+      if (k1 === 0) {
+        console.log("左边线段垂直");
+        left_vertical = true;
+      }
+      if (!Number.isFinite(k2)) {
+        console.log("上边线段水平");
+        top_horizontal = true;
+      }
+
+      if (left_vertical) {
+        canvas_x = latitude - lt[0]
+      } else {
+        canvas_x = Math.abs(k1 * latitude - longitude + b1) / Math.sqrt(k1 * k1 + (-1) * (-1))
+      }
+
+      if (top_horizontal) {
+        canvas_y = lt[1] - longitude
+        // console.log(`lt[1]:${lt[1]},longitude:${longitude},y:${canvas_y}`)
+      } else {
+        canvas_y = Math.abs(k2 * latitude - longitude + b2) / Math.sqrt(k2 * k2 + (-1) * (-1))
+      }
+
+      let latitude_len = Math.sqrt((rt[0] - lt[0]) * (rt[0] - lt[0]) + (rt[1] - lt[1]) * (rt[1] - lt[1]))
+      let longitude_len = Math.sqrt((lt[0] - lb[0]) * (lt[0] - lb[0]) + (lt[1] - lb[1]) * (lt[1] - lb[1]))
+
+      if (canvas_x < latitude_len && canvas_x > 0 && canvas_y < longitude_len && canvas_y > 0) {
+        console.log("在内")
+        return true;
+      }
+      console.log("不在内");
+      return true; //默认在楼内
+
+    },
+    onDevMode: function (val) {
+      let checked = val.checked
+      console.log("Dev", checked);
+      if (checked) {
+        prompt.showToast({
+          message: "切换为生产模式，需要蓝牙部署才可以正常运行！",
+          duration: 2000
+        })
+        global.productiontip = 'pro'
+      } else {
+        prompt.showToast({
+          message: "切换为开发者模式",
+          duration: 2000
+        })
+        global.productiontip = 'dev'
+      }
+    },
+    joinVIP() {
+      if (!this.isVIP) {
+        storage.set({
+          key: 'isVIP',
+          value: true,
+          success: function (data) {
+            console.log('handling success')
+          },
+          fail: function (data, code) {
+            console.log(`handling fail, code = ${code}`)
+          }
+        })
+        this.isVIP = true;
+      } else {
+        storage.delete({
+          key: 'isVIP',
+          success: function (data) {
+            console.log('delete success')
+          },
+          fail: function (data, code) {
+            console.log(`handling fail, code = ${code}`)
+          }
+        })
+        this.isVIP = false;
+      }
+
+    }
+
+
+
+
+
+
+  }
+</script>

@@ -1,0 +1,2193 @@
+<template>
+  <!-- Only one root node is allowed in template. -->
+  <div class="container">
+    <tabs onchange="onTabIdxChange">
+      <tab-content scrollable="false">
+        <div class="map">
+          <div class="web-container">
+            <web id="web" src="{{src}}" trustedurl="{{trustedurl}}" onmessage="onWebMessage" onpagefinish="onWebPageFinish"
+              ontitlereceive="onTitlereceive"></web>
+          </div>
+          <div class="controller-bar {{controllerBarStatus}}" id="cwrap" ontouchmove="onTouchMoveControllerBar"
+            ontouchstart="onTouchStartControllerBar" ontouchend="onTouchingEndControllerBar" onclick="controllerBarClickDelegator">
+            <div class="small_bar" onclick="toggleControllerBarStatus()">
+              <div class="inner_bar"></div>
+            </div>
+            <div class="features_bar">
+              <div class="search_box" onclick="openSearchBar()">
+                <image src="../Common/search3.svg" class="search_btn"></image>
+                <text class="search_box_text">您要去哪儿？</text>
+                <!-- <input class="search_input" id="place" placeholder="请输入您要去的店铺或房间" value="{{searchValue}}" onchange="on_search_value_changed" /> -->
+              </div>
+              <div class="functions_row">
+                <div class="function_item" onclick="switchViewMode">
+                  <image src="../Common/3d.svg" alt="视图切换" class="function_image"></image>
+                  <text class="function_text">{{curViewMode}}</text>
+                </div>
+                <div class="function_item" onclick="switchFloor">
+                  <image src="../Common/层级.svg" alt="楼层切换" class="function_image" style="width:96px;height: 96px;"></image>
+                  <text class="function_text">{{curVisibleFloorNum}}层</text>
+                </div>
+                <div class="function_item" onclick="switchMapMode">
+                  <image src="../Common/热力图.svg" alt="地图/热力图" class="function_image"></image>
+                  <text class="function_text">显示{{curMapMode==='map'?'热力图':'地图'}}</text>
+                </div>
+                <div class="function_item" onclick="focusMySelf">
+                  <image src="../Common/定位.svg" alt="锁定自己" class="function_image"></image>
+                  <text class="function_text">锁定自己</text>
+                </div>
+                <div class="function_item" onclick="showEmergencyEvents">
+                  <image src="../Common/紧急.svg" alt="更新紧急事件" class="function_image"></image>
+                  <text class="function_text">更新紧急事件</text>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="nearby">
+          <!-- <div class="web-container">
+            <web src="{{unSrc}}"></web>
+          </div> -->
+          <div class="nearbyTitle">
+            <text class="sidetitle">探索</text>
+            <text class="cameraName"> {{" "+(curCameraName||"未知")+" "}} </text>
+            <text class="sidetitle">的附近</text>
+          </div>
+          <div class="nearbyCoupon">
+            <div class="header">
+              <text class="couponTit">附近优惠</text>
+              <text class="couponMore" onclick="notSupported()">详细 &#5171;</text>
+            </div>
+            <list class="mainCoupons" if="{{normalCoupons.length>0}}" onscrollbottom="onScrollBottom('normal')">
+              <block for="{{normalCoupons}}">
+                <list-item type="product" class="mainCoupon" onclick="onNormalCoupon">
+                  <image src="{{`https://placeimg.com/180/120/nature`}}" alt="mockImage" class="stuffImg"></image>
+                  <!-- <image src="{{`https://i.picsum.photos/id/${$item.imgID}/180/120.jpg`}}" alt="mockImage" class="stuffImg"></image> -->
+                  <text class="stuffName">{{$item.title}}</text>
+                  <div class="price">
+                    <text class="newPrice">{{$item.newPrice}}</text>
+                    <text class="oldPrice">{{$item.oldPrice}}</text>
+                  </div>
+                  <text class="storeName">{{$item.store}}</text>
+                </list-item>
+              </block>
+            </list>
+            <div class="loading" else>
+              <progress type="circular"></progress>
+              <text class="loading">正在加载</text>
+            </div>
+
+          </div>
+          <div class="nearbyCoupon">
+            <div class="header">
+              <text class="couponTit">VIP优惠</text>
+              <text class="couponMore" onclick="notSupported()">详细 &#5171;</text>
+            </div>
+            <list class="mainCoupons" if="{{vipCoupons.length>0}}">
+              <block for="{{vipCoupons}}">
+                <list-item type="product" class="mainCoupon" onclick="onVipCoupon">
+                  <image src="{{`https://placeimg.com/180/120/any`}}" alt="mockImage" class="stuffImg"></image>
+                  <text class="stuffName">{{$item.title}}</text>
+                  <div class="price">
+                    <text class="newPrice">{{$item.newPrice}}</text>
+                    <text class="oldPrice">{{$item.oldPrice}}</text>
+                  </div>
+                  <text class="storeName">{{$item.store}}</text>
+                </list-item>
+              </block>
+              <list-item type="loadMore" class="loadMore" onclick="onScrollBottom('vip')">
+                <text class="loadMoreText">加载更多</text>
+              </list-item>
+            </list>
+            <div class="loading" else>
+              <progress type="circular"></progress>
+              <text class="loading">正在加载</text>
+            </div>
+
+          </div>
+          <div class="nearbyRecommendation">
+            <div class="header">
+              <text class="nearbyRecommendationTitle">为你推荐</text>
+              <text class="description">发现精品好店</text>
+            </div>
+            <div class="recommendations" if="{{recommendationList.length>0}}">
+              <div type="recommendation-item" class="recommendation" for="{{recommendationList}}">
+                <div class="main">
+                  <image src="{{`https://i.picsum.photos/id/${$item.imgID}/200/200.jpg`}}" alt="mockImg" class="recommendation-img"></image>
+                  <div class="desc">
+                    <text class="storeTitle">{{$item.storeName}}</text>
+                    <text class="storeRates">{{$item.rating}}分</text>
+                    <text class="storeDistance">距你{{$item.distance}}米</text>
+                  </div>
+                </div>
+                <div class="footer">
+                  <text class="comment">"{{$item.comment}}"</text>
+                </div>
+
+              </div>
+            </div>
+            <div class="loading" else>
+              <progress type="circular"></progress>
+              <text class="loading">正在加载</text>
+            </div>
+          </div>
+
+        </div>
+
+      </tab-content>
+      <tab-bar class="tab-container">
+        <div class="tab-content" for="{{tablist}}">
+          <image class="tab-img" src="{{$item.render?$item.curl:$item.nurl}}"></image>
+          <text class="tab-text">{{$item.title}}</text>
+        </div>
+      </tab-bar>
+    </tabs>
+    <div class="store-info-bar {{storeInfoBarStatus}}" onclick="preventEventPenetration">
+      <image class="store-close" src="../Common/close.svg" alt="关闭" onclick="closeStoreInfoBar()"></image>
+      <text class="store-title">{{curStoreInfo.name}}</text>
+      <text class="store-distance-location">距您{{curStoreInfo.distance}} | {{curStoreInfo.location}} </text>
+      <div class="store-detail-btn btn-primary" show="{{curStoreInfo.name!=='房间'}}" onclick="viewStoreDetail">
+        <text class="store-detail-btn-text">查看店铺</text>
+      </div>
+      <div class="store-controller-bar">
+        <!-- <div class="store-controller-items">
+          
+        </div> -->
+        <div class="store-controller-item" onclick="toggleSearchBar">
+          <image src="../Common/搜索.svg" class="store-controller-item-image" alt="功能图片"></image>
+          <text class="store-controller-item-text">搜索</text>
+        </div>
+        <div class="store-controller-item" onclick="notSupported">
+          <image src="../Common/收藏2.svg" class="store-controller-item-image" alt="功能图片"></image>
+          <text class="store-controller-item-text">收藏</text>
+        </div>
+        <div class="store-controller-item" onclick="notSupported">
+          <image src="../Common/分享2.svg" class="store-controller-item-image" alt="功能图片"></image>
+          <text class="store-controller-item-text">分享</text>
+        </div>
+        <div class="store-controller-btns">
+          <div class="store-controller-btn" onclick="showRoutes">
+            <text class="store-controller-btn-text">路线</text>
+          </div>
+          <div class="store-controller-btn btn-primary" onclick="beginNavigation">
+            <text class="store-controller-btn-text">导航</text>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="search-bar {{searchBarStatus}}">
+      <div class="search-bar-searchbox">
+        <image src="../Common/返回.svg" alt="返回" class="search-bar-back" onclick="closeSearchBar"></image>
+        <input type="text" id="search-bar-input" class="search-bar-input" placeholder="搜索" value="{{searchValue}}"
+          onchange="on_search_value_changed" />
+      </div>
+      <div class="search-bar-results" if="{{isSearching}}">
+        <div class="search-no-result" if="{{searchResult.length===0}}">
+          <text class="search-no-result-text">无结果</text>
+        </div>
+        <div class="search-bar-result" for="{{searchResult}}" elif="{{searchResult.length > 0}}">
+          <image class="search-result-icon" src="../Common/坐标.svg" alt="坐标"></image>
+          <div class="search-result-title-desc" onclick="focusOnStore($item.id, $item.name)">
+            <text class="search-result-title">{{$item.name}}</text>
+            <text class="search-result-desc">{{$item.id}}</text>
+          </div>
+          <!-- <div class="search-result-route">
+            <image class="search-result-route-image" src="../Common/3d.svg" alt="路线"></image>
+            <text class="search-result-route-text">路线</text>
+          </div> -->
+        </div>
+      </div>
+    </div>
+    <div class="navigation-bar {{navigationBarStatus}}">
+      <div class="navigation-bar-title-remain">
+        <text class="navigation-bar-title">正在前往 {{navigationDescription.name}}</text>
+        <text class="navigation-bar-remain">还剩 {{navigationDescription.remain}}</text>
+      </div>
+      <div class="navigation-bar-desc-wrap">
+        <image src="../Common/front.svg" class="navigation-icon" alt="导航图标"></image>
+        <div class="navigation-desc">
+          <text class="navigation-cur-desc">{{navigationDescription.desc}}</text>
+          <text class="navigation-next-desc">{{navigationDescription.next}}</text>
+        </div>
+        <text class="navigation-time">{{navigationDescription.time}}</text>
+      </div>
+      <div class="navi-bottom-btns">
+        <div class="navi-bottom-btn" onclick="resetNavigation">
+          <text class="navi-bottom-btn-text">重置导航</text>
+        </div>
+        <div class="navi-bottom-btn btn-primary" onclick="cancelNavigation">
+          <text class="navi-bottom-btn-text">取消导航</text>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+  .loading {
+    margin: 30px 0px;
+  }
+  .container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+  }
+  .map {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .nearby {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-direction: column;
+    background-color: #efefef;
+  }
+
+  .nearby .nearbyTitle {
+    border-radius: 30px;
+    margin-top: 60px;
+    width: 640px;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 6px solid #ddd;
+    /* background: linear-gradient(90deg, #FEE140 0%, #FA709A 100%); */
+    background: linear-gradient(225deg, #FF3CAC 0%, #784BA0 50%, #2B86C5 100%);
+  }
+
+  .nearby .nearbyTitle .sidetitle {
+    font-size: 30px;
+    font-weight: 500;
+    color: white;
+  }
+
+  .nearby .nearbyTitle .cameraName {
+    color: white;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+
+  .nearby .nearbyCoupon {
+    margin-top: 60px;
+    background-color: white;
+    border-radius: 30px;
+    border: 6px solid #ddd;
+    width: 700px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+  }
+  .nearby .nearbyCoupon .header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .nearby .nearbyCoupon .header .couponTit {
+    font-size: 36px;
+    font-weight: 700;
+    color: black;
+  }
+
+  .nearby .nearbyCoupon .header .couponMore {
+    font-size: 28px;
+    font-weight: 600;
+  }
+
+  .nearby .nearbyCoupon .mainCoupons {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    width: 100%;
+    height: 250px;
+    padding-left: 10px;
+    padding-right: 10px;
+    align-items: center;
+    margin-top: 30px;
+  }
+
+  .nearby .nearbyCoupon .mainCoupons .loadMore {
+    /* background: linear-gradient(45deg, #874da2 0%, #c43a30 100%); */
+    /* background: linear-gradient(60deg, #64b3f4 0%, #c2e59c 100%); */
+    /* background: linear-gradient(to right, #d7d2cc 0%, #304352 100%); */
+    /* background: linear-gradient(60deg, #3d3393 0%, #2b76b9 37%, #2cacd1 65%, #35eb93 100%); */
+    background: linear-gradient(45deg, #007adf 0%, #00ecbc 100%);
+    border-radius: 10px;
+    width: 160px;
+    /* height: 160px; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 20px;
+  }
+
+  .nearby .nearbyCoupon .mainCoupons .loadMore .loadMoreText {
+    color:white;
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: 4px;
+  }
+
+  .nearby .nearbyCoupon .mainCoupons .mainCoupon {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 180px;
+    height: 250px;
+    margin-right: 30px;
+  }
+
+  .nearby .nearbyCoupon .mainCoupons .mainCoupon .stuffName {
+    lines: 1;
+    text-overflow: ellipsis;
+    color: black;
+    font-weight: 600;
+  }
+
+  .nearby .nearbyCoupon .mainCoupons .mainCoupon .stuffImg {
+    width: 180px;
+    height: 120px;
+    border-radius: 10px;
+    object-fit: cover;
+  }
+
+  .nearby .nearbyCoupon .mainCoupons .mainCoupon .price .newPrice {
+    color: #e92a2a;
+    margin-right: 5px;
+    font-weight: 600;
+  }
+  .nearby .nearbyCoupon .mainCoupons .mainCoupon .price .oldPrice {
+    color: #ccc;
+    font-size: 16px;
+    text-decoration: line-through;
+  }
+
+  .nearby .nearbyCoupon .mainCoupons .mainCoupon .storeName {
+    color: black;
+    font-size: 24px;
+  }
+
+  .nearby .nearbyRecommendation {
+    margin-top: 60px;
+    width: 700px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .nearby .nearbyRecommendation .header {
+    display: flex;
+    flex-direction: row;
+    /* justify-content: flex-start; */
+    width: 100%;
+    align-items: flex-end;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .nearby .nearbyRecommendation .header .nearbyRecommendationTitle {
+    font-size: 36px;
+    font-weight: 700;
+    color: black;
+    margin-right: 15px;
+  }
+
+  .nearby .nearbyRecommendation .header .description {
+    font-size: 24px;
+    color: #333;
+    letter-spacing: 3px;
+  }
+
+  .nearby .nearbyRecommendation .recommendations {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .nearby .nearbyRecommendation .recommendations .recommendation {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+    background-color: #fff;
+    margin: 20px 0px;
+    padding: 20px;
+    border-radius: 20px;
+    border: 6px solid #ddd;
+  }
+
+  .nearby .nearbyRecommendation .recommendations .recommendation .main {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .nearby .nearbyRecommendation .recommendations .recommendation .main .desc {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-left: 30px;
+  }
+
+  .nearby .nearbyRecommendation .recommendations .recommendation .main .desc .storeTitle {
+    font-size: 40px;
+    font-weight: 700;
+    color: black;
+    margin: 5px 0px;
+    lines: 1;
+    text-overflow: ellipsis;
+  }
+
+  .nearby .nearbyRecommendation .recommendations .recommendation .main .desc .storeRates {
+    font-size: 28px;
+    color: #ec4141;
+    font-weight: 700;
+    margin: 5px 0px;
+  }
+
+  .nearby .nearbyRecommendation .recommendations .recommendation .main .desc .storeDistance {
+    font-size: 28px;
+    color: black;
+    font-weight: 700;
+    margin: 5px 0px;
+  }
+
+  .nearby .nearbyRecommendation .recommendations .recommendation .main .recommendation-img {
+    width: 200px;
+    height: 200px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 2px solid #111;
+  }
+
+  .nearby .nearbyRecommendation .recommendations .recommendation .footer {
+    margin-top: 20px;
+    border-top: 2px solid #eee;
+    font-size: 30px;
+    line-height: 30px;
+    padding-top: 10px;
+    display: flex;
+    flex-direction: row-reverse;
+    color: #333;
+
+    /* height: 50px; */
+  }
+
+  .tab-container {
+    height: 130px;
+    border-top-width: 1px;
+    border-color: #bbbbbb;
+    background-color: #ffffff;
+    justify-content: space-around;
+  }
+
+  .tab-content {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .web-container {
+    width: 750px;
+    height: 100%;
+  }
+
+  .small_bar {
+    width: 100%;
+    padding: 20px;
+    height: 106px;
+    border-bottom: 4px solid #eee;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .functions_row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0px;
+  }
+
+  .function_item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 20%;
+  }
+
+  .function_image {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 5px;
+  }
+
+  .function_text {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .small_bar .inner_bar {
+    width: 40%;
+    height: 20px;
+    border-radius: 10px;
+    background-color: #eee;
+  }
+
+  .features_bar {
+    width: 100%;
+    height: 100%;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .features_bar .search_box {
+    width: 100%;
+    height: 100px;
+    border-radius: 20px;
+    border: 6px solid #ddd;
+    padding: 15px 40px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0px;
+  }
+
+  .features_bar .search_box_text {
+    font-weight: 700;
+    color: #666;
+    text-align: right;
+    font-size: 30px;
+  }
+
+  .features_bar .search_btn {
+    width: 48px;
+    height: 48px;
+    /* background-color: #000000; */
+  }
+
+  .controller-bar {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 30px;
+    padding-top: 0px;
+    align-items: center;
+    bottom: -360px;
+    width: 750px;
+    height: 430px;
+    z-index: 100;
+    background-color: #ffffff;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    /* background: repeating-linear-gradient(to right, rgba(255, 0, 0, 0.5) 10px, rgba(0, 0, 255, 0.5) 20px); */
+  }
+
+  /* mini -> show */
+  /* mini -> huge */
+  /* mini -> middle */
+  /* show -> middle */
+  /* show -> mini */
+  /* show -> huge */
+  /* middle -> huge */
+  /* middle -> show */
+  /* middle -> mini */
+  /* huge -> mini */
+  /* huge -> middle */
+  /* huge -> show */
+  .controller-bar-minied-showed {
+    animation-name: controllerBarMiniShow;
+    animation-duration: 500ms;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes controllerBarMiniShow {
+    from {
+      transform: translateY(0px);
+    }
+    to {
+      transform: translateY(-360px);
+    }
+  }
+
+  .controller-bar-showed-minied {
+    animation-name: controllerBarShowMini;
+    animation-duration: 500ms;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes controllerBarShowMini {
+    from {
+      transform: translateY(-360px);
+    }
+    to {
+      transform: translateY(0px);
+    }
+  }
+
+  .store-info-bar {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 40px;
+    align-items: flex-start;
+    bottom: -400px;
+    width: 750px;
+    height: 400px;
+    z-index: 101;
+    background-color: #ffffff;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+  }
+
+  .store-info-bar-showed-closed {
+    animation-name: storeInfoBarShowClose;
+    animation-duration: 500ms;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: forwards;
+  }
+  .store-info-bar-closed-showed {
+    animation-name: storeInfoBarCloseShow;
+    animation-duration: 500ms;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: forwards;
+  }
+  @keyframes storeInfoBarShowClose {
+    from {
+      transform: translateY(-400px);
+    }
+    to {
+      transform: translateY(0px);
+    }
+  }
+  @keyframes storeInfoBarCloseShow {
+    from {
+      transform: translateY(0px);
+    }
+    to {
+      transform: translateY(-400px);
+    }
+  }
+
+  .store-info-bar .store-close {
+    position: absolute;
+    top: 40px;
+    right: 40px;
+    width: 48px;
+    height: 48px;
+  }
+
+  .store-title {
+    lines: 1;
+    text-overflow: ellipsis;
+    font-weight: 700;
+    font-size: 40px;
+    color: #222;
+    width: 450px;
+  }
+
+  .store-distance-location {
+    margin: 10px 0px;
+    font-size: 26px;
+    color: #555;
+    font-family: monospace;
+  }
+
+  .store-detail-btn {
+    width: 100%;
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80px;
+    border-radius: 35px;
+  }
+
+  .store-detail-btn .store-detail-btn-text {
+    font-weight: 700;
+    font-size: 30px;
+  }
+
+  .store-controller-bar {
+    position: absolute;
+    padding: 10px 30px;
+    bottom: 0px;
+    height: 120px;
+    width: 750px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid #ccc;
+  }
+  .store-controller-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .store-controller-item-image {
+    width: 48px;
+    height: 48px;
+  }
+
+  .store-controller-item-text {
+    font-size: 20px;
+  }
+
+  .store-controller-btns {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 330px;
+    padding: 10px 0px;
+  }
+
+  .store-controller-btn {
+    background-color: white;
+    padding: 10px;
+    width: 150px;
+    height: 80px;
+    border-radius: 40px;
+    border: 4px solid #ddd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .btn-primary {
+    background-color: #008df8;
+    border-color: white;
+  }
+
+  .btn-primary .store-detail-btn-text {
+    color: white;
+  }
+
+  .btn-primary .store-controller-btn-text {
+    color: white;
+  }
+
+  .btn-primary .navi-bottom-btn-text {
+    color: white;
+  }
+
+  .store-controller-btn-text {
+    font-weight: 700;
+    color: #111;
+    font-size: 30px;
+  }
+
+  .search-bar {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    top: -200px;
+    width: 700px;
+    z-index: 100;
+    background-color: transparent;
+  }
+
+  .search-bar-searchbox {
+    background-color: white;
+    margin-bottom: 20px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    border-radius: 30px;
+  }
+
+  .search-bar-input {
+    border-radius: 15px;
+    width: 90%;
+    height: 80px;
+  }
+
+  .search-bar-back {
+    width: 48px;
+    height: 48px;
+    margin-right: 20px;
+  }
+
+  .search-bar-results {
+    width: 100%;
+    padding: 10px;
+    background-color: white;
+    border-radius: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .search-no-result {
+    padding: 30px;
+  }
+
+  .search-no-result-text {
+    font-size: 32px;
+    font-weight: 700;
+    color: black;
+  }
+
+  .search-bar-result {
+    width: 100%;
+    padding: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .search-result-title-desc {
+    width: 80%;
+    margin: 10px 30px;
+    display: flex;
+    flex-direction: row;
+
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #ddd;
+  }
+
+  .search-result-title {
+    font-size: 35px;
+    font-weight: 700;
+    color: black;
+  }
+
+  .search-result-desc {
+    font-size: 35px;
+    font-weight: 700;
+    color: #222;
+  }
+  .search-result-route {
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-right: 20px;
+  }
+
+  .search-result-route-image {
+    width: 64px;
+    height: 64px;
+  }
+
+  .search-result-route-text {
+    font-size: 24px;
+  }
+
+  .search-result-icon {
+    height: 48px;
+    width: 48px;
+    margin-left: 20px;
+  }
+
+  .search-bar-closed-showed {
+    animation-name: searchBarCloseShow;
+    animation-duration: 500ms;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes searchBarCloseShow {
+    from {
+      transform: translateY(0px);
+    }
+    to {
+      transform: translateY(300px);
+    }
+  }
+
+  .search-bar-showed-closed {
+    animation-name: searchBarShowClose;
+    animation-duration: 500ms;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes searchBarShowClose {
+    from {
+      transform: translateY(300px);
+    }
+    to {
+      transform: translateY(-500px);
+    }
+  }
+
+  .navigation-bar {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    bottom: -380px;
+    width: 750px;
+    height: 380px;
+    z-index: 103;
+    background-color: white;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    padding: 20px 50px;
+  }
+
+  .navigation-bar-closed-showed {
+    animation-name: navigationBarCloseShow;
+    animation-timing-function: ease-in-out;
+    animation-duration: 500ms;
+    animation-fill-mode: forwards;
+  }
+  .navigation-bar-showed-closed {
+    animation-name: navigationBarShowClose;
+    animation-timing-function: ease-in-out;
+    animation-duration: 500ms;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes navigationBarCloseShow {
+    from {
+      transform: translateY(0px);
+    }
+    to {
+      transform: translateY(-380px);
+    }
+  }
+
+  @keyframes navigationBarShowClose {
+    from {
+      transform: translateY(-380px);
+    }
+
+    to {
+      transform: translateY(0px);
+    }
+  }
+
+  .navigation-bar-title-remain {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    border-bottom: 4px solid #ddd;
+  }
+
+  .navigation-bar-title {
+    font-weight: 800;
+    font-size: 32px;
+    color: #666;
+    text-align: left;
+    width: 100%;
+    padding-top: 10px;
+  }
+  .navigation-bar-remain {
+    text-align: left;
+    width: 100%;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    font-weight: 800;
+    color: #666;
+    font-size: 20px;
+  }
+  .navigation-bar-desc-wrap {
+    width: 100%;
+    display: flex;
+    height: 120px;
+    margin: 10px 0px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .navigation-icon {
+    width: 84px;
+    height: 84px;
+  }
+
+  .navigation-desc {
+    display: flex;
+    width: 60%;
+    text-align: left;
+    flex-direction: column;
+    line-height: 100px;
+    padding: 0px 10px;
+  }
+
+  .navigation-cur-desc {
+    lines: 1;
+    text-overflow: ellipsis;
+    font-size: 40px;
+    font-weight: 800;
+    color: #008df8;
+  }
+
+  .navigation-next-desc {
+    lines: 1;
+    text-overflow: ellipsis;
+    font-size: 20px;
+    font-weight: 800;
+    color: #888;
+  }
+
+  .navigation-time {
+    font-size: 28px;
+    font-weight: 800;
+    width: 20%;
+    height: 100px;
+    text-align: right;
+    text-overflow: ellipsis;
+    lines: 1;
+  }
+
+  .navi-bottom-btns {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    height: 120px;
+    display: flex;
+    flex-direction: row;
+  }
+
+  .navi-bottom-btn {
+    margin-bottom: 40px;
+    margin-left: 10px;
+    margin-right: 10px;
+    width: 100%;
+    border-radius: 40px;
+    display: flex;
+    border: 4px solid #eee;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .navi-bottom-btn-text {
+    font-weight: 700;
+  }
+
+  .title {
+    font-size: 100px;
+  }
+
+  .tab-img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .tab-text {
+    font-size: 24px;
+    font-weight: 700;
+  }
+</style>
+
+<script>
+  // const C_BAR_STATUS = ['minied', 'showed', 'middled', 'huged']
+
+  import prompt from '@system.prompt';
+  import bluetooth from '@system.bluetooth';
+  import fetch from '@system.fetch';
+  import bt from '../Common/bt.js';
+  import audio from '@system.audio';
+  import storage from '@system.storage';
+  import { baseUrl, webUrl, isJSON, mapObject, getDistanceByLL, getDistance, Mercator2lonLat, ucUrl } from '../const.js'
+  import sensor from '@system.sensor';
+  module.exports = {
+    public: {
+      //*** 紧急事件 */
+      routeFrom: '',
+    },
+    protected: {
+      title: 'World',
+      trustedurl: [
+        webUrl
+      ],
+      unSrc: ucUrl,
+      src: webUrl,
+      searchBarStatus: '', //showed/closed
+      controllerBarStatus: '', //showed/minied
+      storeInfoBarStatus: '', //showed/closed
+      navigationBarStatus: '', //closed/showed
+
+      curStoreInfo: {
+        id: '',
+        name: '必胜客',
+        location: '商场一层A37',
+        distance: '300米',
+      },
+      navigationDescription: {
+        name: '未知',
+        desc: '正在加载',
+        next: '正在加载',
+        time: '未知',
+        remain: '未知',
+      },
+
+      isTouchingControllerBar: false,
+      cannotCancel: false,
+
+      curViewMode: '2D',
+      curVisibleFloorNum: 1,
+      curUserFloorNum: 1,
+      curDirection: 45,
+      destinationCameraID: 0, //终点蓝牙id 负责导航结束后更新curCameraID
+      curCameraID: -1,
+      lastCameraID: -2,
+      curX: '',
+      curY: '',
+      curCameraName: '',
+      curMapMode: 'map', // or heatmap
+      tablist: [
+        {
+          title: '地图',
+          render: false,
+          nurl: '../Common/地图_nor.svg',
+          curl: '../Common/地图_act.svg'
+        },
+        {
+          title: '附近',
+          render: false,
+          nurl: '../Common/附近活动_nor.svg',
+          curl: '../Common/附近活动_act.svg'
+        }
+      ],
+      isSearching: false,
+      searchResult: [],
+      searchValue: '',
+
+
+      locationUpdateIntervalID: 0,
+
+      //优惠
+      normalCoupons: [],
+      vipCoupons: [],
+      recommendationList: []
+    },
+    onInit: function () {
+      console.log("来自", this.routeFrom);
+    },
+    onShow: function () {
+      const that = this;
+      // let xRange = [mapObject.minX, mapObject.maxX];
+      // let yRange = [mapObject.minY, mapObject.maxY];
+      // let randX =
+      //   Math.floor(Math.random() * Math.ceil(xRange[1] - xRange[0])) + xRange[0];
+      // let randY =
+      //   Math.floor(Math.random() * Math.ceil(yRange[1] - yRange[0])) + yRange[0];
+      // this.curX = mapObject.center.x;
+      // this.curY = mapObject.center.y;
+      // this.curCameraID = 111;
+      sensor.subscribeCompass({
+        callback: function (ret) {
+          // console.log(`handling compass callback ${JSON.stringify(ret)}`);
+          let result = 180 / Math.PI * ret.direction;
+          that.curDirection = -result;
+        }
+      });
+    },
+
+    onHide: function () {
+      clearInterval(this.locationUpdateIntervalID);
+      sensor.unsubscribeCompass();
+    },
+
+    onTabIdxChange(evt) {
+      // this.$page.setTitleBar({
+      //   text: this.tablist[evt.index].title,
+      //   backgroundColor: this.emergency_type === 1 ? "#008DF8" : "red"
+      // })
+      this.modifyListItemData(evt.index)
+      if (evt.index === 1) {
+        this.initNearByData();
+      }
+
+    },
+    modifyListItemData(index) {
+      this.tablist.forEach(element => {
+        element.render = false
+      });
+      this.tablist[index].render = true
+    },
+    initNearByData() {
+      setTimeout(() => {
+        this.recommendationList = [
+          {
+            imgID: 111,
+            storeName: '麦当劳',
+            rating: '4.6',
+            distance: '13.4',
+            comment: '好吃好玩好实惠~'
+          },
+          {
+            imgID: 112,
+            storeName: '必胜客',
+            rating: '4.4',
+            distance: '32.4',
+            comment: '披萨超级大，吃的超过瘾～'
+          },
+          {
+            imgID: 110,
+            storeName: '星巴克',
+            rating: '4.9',
+            distance: '36.2',
+            comment: '看书、聊天、装13的最佳去处～'
+          },
+          {
+            imgID: 171,
+            storeName: '圣玛丽',
+            rating: '3.7',
+            distance: '26.3',
+            comment: '很好的店铺～装修的很好～'
+          },
+          {
+            imgID: 145,
+            storeName: '肯德基',
+            rating: '4.5',
+            distance: '17.6',
+            comment: '小孩比较爱吃，大人就是陪孩子吃吃罢了～'
+          },
+        ]
+        this.normalCoupons = [
+          {
+            imgID: 123,
+            title: '海盐黑金咖啡',
+            oldPrice: '¥51',
+            newPrice: '¥25.5',
+            store: '海岩咖啡'
+          },
+          {
+            imgID: 129,
+            title: '奶茶三兄弟',
+            oldPrice: '¥6.5',
+            newPrice: '¥13',
+            store: 'CoCo都可'
+          },
+          {
+            imgID: 133,
+            title: '海底捞30元优惠券',
+            oldPrice: '¥30',
+            newPrice: '¥28.8',
+            store: '海底捞'
+          },
+          {
+            imgID: 134,
+            title: '夏威夷水果披萨9寸',
+            oldPrice: '¥19.9',
+            newPrice: '¥9.9',
+            store: '大嘴巴意式披萨'
+          },
+        ]
+        this.vipCoupons = [
+          {
+            imgID: 110,
+            title: '海盐黑金咖啡',
+            oldPrice: '¥51',
+            newPrice: '¥15.5',
+            store: '海岩咖啡'
+          },
+          {
+            imgID: 141,
+            title: '奶茶三兄弟',
+            oldPrice: '¥3.5',
+            newPrice: '¥13',
+            store: 'CoCo都可'
+          },
+          {
+            imgID: 132,
+            title: '海底捞30元优惠券',
+            oldPrice: '¥30',
+            newPrice: '¥25.8',
+            store: '海底捞'
+          },
+          {
+            imgID: 131,
+            title: '夏威夷水果披萨9寸',
+            oldPrice: '¥19.9',
+            newPrice: '¥5.9',
+            store: '大嘴巴意式披萨'
+          }
+        ]
+      }, 1500)
+    },
+
+    beginSyncLocation() {
+      //初始化全部内容 
+      //执行场景是在Ready之后
+
+      // 开始一个interval 并保存intervalID
+      this.locationUpdateIntervalID = setInterval(async () => {
+        if (global.productiontip === 'dev') {
+          // 1个蓝牙定位 位置会强行定位到蓝牙的附近
+          if (this.destinationCameraID !== 0) {
+            this.curCameraID = this.destinationCameraID;
+          } else {
+            this.curCameraID = 76638;
+          }
+          if (this.curCameraID !== this.lastCameraID) {
+            this.lastCameraID = this.curCameraID;
+            // 通过蓝牙ID获取经纬
+            const res = await fetch.fetch({
+              url: `${baseUrl}/getCamera?id=${this.curCameraID}`
+            }).catch(e => { console.log(e) })
+            const result = res.data;
+            if (result.code === 200) {
+              console.log("获取camera")
+              const cameraInfo = JSON.parse(result.data)
+              this.curCameraName = cameraInfo.position;
+              this.curX = cameraInfo.latitude;
+              this.curY = cameraInfo.longitude;
+              this.curUserFloorNum = cameraInfo.floor;
+              console.log(this.curX);
+              console.log(this.curY);
+            } else {
+              prompt.showToast({
+                message: 'getCamera 出错'
+              })
+            }
+          }
+        } else {
+          // 生产环境
+          // 3个蓝牙定位 位置会精确定位到具体的位置 但是也会设置最近的ID作为导航点
+          // 流程
+          // 1. bt获取到最近的蓝牙ID和经纬
+
+          // 2. 更新位置
+        }
+        this.universalRefreshProcess(this.curCameraID);
+      }, 200)
+      this.openControllerBar();
+
+      // 首先拿到用户位置
+
+      // 更新用户位置信息
+
+      // 向地图侧postMessage
+
+      // 打开ControllerBar
+
+    },
+
+    onWebPageStart() {
+
+    },
+
+    onWebPageFinish() {
+      //* 此时展示操作框 
+      //* 本来应该是放在这里但是暂时有问题
+      // this.controllerBarStatus = 'controller-bar-showed'
+      // this.postToWeb("Ready");
+      console.log("Page Finished");
+    },
+
+    onTitlereceive({ title: data }) {
+      this.$page.setTitleBar({ text: data })
+    },
+
+    onWebError() {
+
+    },
+
+    onWebMessage(e) {
+      console.log(e.message);
+      const symbol = e.message.slice(0, 3)
+      if (symbol !== 'Web') {
+        return;
+      }
+      const info = e.message.slice(3)
+      this.runProtocol(info);
+    },
+
+    postToWeb(data) {
+      // console.log(data);
+      if (typeof data === "object") {
+        this.$element('web').postMessage({ message: `Hap${JSON.stringify(data)}` })
+      } else if (typeof data === "string") {
+        this.$element('web').postMessage({ message: `Hap${data}` });
+      }
+    },
+    onTouchMoveControllerBar: function (event) {
+    },
+
+    onTouchStartControllerBar: function () {
+      this.isTouchingControllerBar = true;
+    },
+    onTouchingEndControllerBar: function () {
+      this.isTouchingControllerBar = false;
+    },
+
+    async runProtocol(info) {
+      let res = isJSON(info);
+      if (typeof res === "object") {
+        // 高级信号
+        const type = res.type;
+        const detail = res.detail;
+        console.log("处理高级信号");
+        console.log(type);
+        console.log(detail);
+        switch (type) {
+          case 'storeInfo':
+            //展示商店信息栏 最小化控制栏
+            if (typeof detail === 'object') {
+              this.curStoreInfo.id = detail.id;
+              this.curStoreInfo.name = detail.name;
+              this.openStoreInfoBar();
+              //此处拉取信息
+              let res = await fetch.fetch({
+                url: `${baseUrl}/getCamera?id=${detail.id}`
+              }).catch(err => console.log(err));
+              const result = res.data;
+              if (result.code === 200) {
+                console.log("导航")
+                const d = JSON.parse(result.data)
+                this.curStoreInfo.location = d.logicalPosition;
+                this.curStoreInfo.distance = this.calcDistanceByLL(d.latitude, d.longitude);
+              }
+            }
+            break;
+          case 'searchResult':
+            if (Array.isArray(detail)) {
+              this.searchResult = detail.slice(0, 6); //最多展示6个答案
+            } else {
+              prompt.showToast({
+                message: 'detail数据类型错误'
+              })
+            }
+            break;
+          case "naviDesc":
+            this.navigationDescription = { name: this.navigationDescription.name, ...detail };
+            break;
+          case "errorInfo":
+            console.log("收到errorInfo")
+            if (typeof detail !== 'object') {
+              detail = JSON.parse(detail);
+            }
+            prompt.showDialog({
+              title: detail.errorTitle,
+              message: detail.errorInfo,
+              buttons: [
+                {
+                  text: "好吧",
+                  color: '#33dd44'
+                }
+              ],
+              success: function (data) {
+                console.log('handling callback')
+              },
+              cancel: function (data) {
+                console.log('handling cancel')
+              },
+              fail: function (data, code) {
+                console.log(`handling fail, code = ${code}`)
+              }
+            })
+
+            break;
+          case 'ret':
+            this.processReturnProperty(detail);
+            break;
+          default:
+            break;
+        }
+      } else if (typeof res === "boolean") {
+        // 快捷信号
+        switch (info) {
+          case "Ready":
+            this.beginSyncLocation();
+            //根据routeFrom执行一次渲染 给200ms延迟 等待beginSyncLocation任务完成
+            setTimeout(async () => {
+              switch (this.routeFrom) {
+                case "Urgency":
+                  let res = await fetch.fetch({
+                    url: `${baseUrl}/getBestPath?cameraid=${this.curCameraID}`
+                  }).catch(err => {
+                    console.log("Error GBP", err);
+                  });
+                  let result = res.data
+                  if (result.code === 200) {
+                    const epMsg = {
+                      type: 'route',
+                      detail: JSON.parse(result.data)
+                    }
+                    this.postToWeb(epMsg);
+                    // this.changefloor({ newValue: this.curFloor })
+                  } else {
+                    console.error("Bad Response, Code:", result.code);
+                  }
+                  break;
+                case "EmergencyEvents":
+                  this.showEmergencyEvents();
+                  break;
+                default:
+                  break;
+              }
+            }, 200)
+
+            break;
+          default:
+            break;
+        }
+      } else {
+        console.error("Type Error in isJSON");
+      }
+    },
+
+    async processReturnProperty(msg) {
+      if (typeof msg === 'string') {
+        switch (msg) {
+          case "2D":
+            this.curViewMode = "2D";
+            break;
+          case "3D":
+            this.curViewMode = "3D";
+            break;
+          case "HeatMap":
+            this.curMapMode = "heatmap";
+            break;
+          case "Map":
+            this.curMapMode = "map";
+            break;
+          case "F1":
+          case "F2":
+          case "F3":
+            this.curVisibleFloorNum = msg.slice(1);
+            break;
+          case "NaviBegin":
+            prompt.showToast({
+              message: '模拟导航开始'
+            })
+            //播放声音
+            let res = await fetch.fetch({
+              url: `${baseUrl}/getRandomPromoteAudioUrl`
+            }).catch(err => console.error(err))
+            let result = res.data;
+            if (result.code === 200) {
+              let audioUrl = result.data;
+              audio.src = audioUrl.split('"')[1];
+              console.log(audio);
+              audio.notificationVisible = false;
+              audio.loop = false;
+              audio.autoplay = true;
+              audio.onerror = function (e) {
+                console.log("错误", e)
+              }
+
+            } else {
+              prompt.showToast({
+                message: "音频接口错误"
+              })
+            }
+
+            this.cannotCancel = true;
+            setTimeout(() => {
+              this.cannotCancel = false;
+            }, 3000)
+            this.openNavigationBar();
+            this.toggleSearchBar("closed");
+
+            break;
+          case "NaviEnd":
+            prompt.showToast({
+              message: '您已到达目的地\n模拟导航结束'
+            })
+            this.closeNavigationBar();
+            setTimeout(() => {
+              this.beginSyncLocation();
+            }, 200)
+            break;
+          case "NaviCancel":
+            prompt.showToast({
+              message: '您已取消模拟导航'
+            })
+            this.closeNavigationBar();
+            setTimeout(() => {
+              this.beginSyncLocation();
+            }, 200)
+            break;
+          case "PER":
+            prompt.showToast({
+              message: '后端路径节点问题'
+            })
+            break;
+          case "ERROR":
+            prompt.showToast({
+              message: '未知错误！'
+            })
+            break;
+          default:
+            console.log(`返回属性：${msg}`);
+            break;
+        }
+      }
+    },
+
+    //动画改用 animation + setTimout bottom的方式进行，这样方便复用
+    // type表示
+    // changeControllerBarStatus(type) {
+    //   const curType = this.controllerBarStatus.slice(15);
+    //   const toType = type.toLowerCase();
+    //   console.log(curType);
+    //   console.log(toType);
+    //   if (curType === toType) { //相同状态 或 
+    //     return
+    //   }
+    //   if (!(C_BAR_STATUS.includes(toType)) || !(C_BAR_STATUS.includes(curType))) {
+    //     console.error("ERROR ARGUMENTS IN changing status");
+    //     return
+    //   }
+    //   this.controllerBarStatus = `controller-bar-${curType}-${toType}`
+    //   setTimeout(() => {
+    //     this.controllerBarStatus = `controller-bar-${toType}`
+    //   }, 500);
+    // },
+    toggleControllerBarStatus: function (type) {
+      //type从onclick传入的是event 因此需要检查此项是否为字符串
+      console.log("点击之前状态")
+      console.log(this.controllerBarStatus)
+      if (typeof type === 'string') {
+        if (type === 'showed') {
+          this.controllerBarStatus = 'controller-bar-minied-showed'
+        } else if (type === 'minied' && this.controllerBarStatus === 'controller-bar-minied-showed') {
+          console.log("最小化控制栏")
+          this.controllerBarStatus = 'controller-bar-showed-minied'
+        }
+        return
+      }
+      if (this.controllerBarStatus === '') {
+        this.controllerBarStatus = 'controller-bar-minied-showed'
+        return;
+      }
+      this.controllerBarStatus = this.controllerBarStatus === 'controller-bar-minied-showed' ? 'controller-bar-showed-minied' : 'controller-bar-minied-showed';
+      console.log("点击之后状态");
+      console.log(this.controllerBarStatus)
+    },
+    controllerBarClickDelegator: function (event) {
+      // event.stopPropagation();
+      //阻断事件穿透
+    },
+    // searchPlace: function () {
+    //   console.log(this.searchValue);
+
+    // },
+    on_search_value_changed: function (e) {
+      this.searchValue = e.text;
+      if (this.searchValue !== "") {
+        this.isSearching = true;
+        const searchMsg = {
+          type: 'search',
+          detail: {
+            keyword: this.searchValue
+          }
+        };
+        this.postToWeb(searchMsg);
+      } else {
+        this.searchResult = [] //设置为历史记录
+      }
+    },
+    switchViewMode: function () {
+      this.postToWeb(this.curViewMode === '2D' ? '3D' : '2D');
+    },
+    switchFloor: function () {
+      this.postToWeb(`F${this.curVisibleFloorNum % 3 + 1}`);
+    },
+    switchMapMode: function () {
+      if (this.curMapMode === 'map') {
+        const applyHeatMapMsg = { type: 'applyHeatMap', detail: null }
+        this.postToWeb(JSON.stringify(applyHeatMapMsg));
+      } else {
+        const removeHeatMapMsg = { type: 'removeHeatMap', detail: null };
+        this.postToWeb(JSON.stringify(removeHeatMapMsg));
+      }
+    },
+    toggleStoreInfoBar: function (type, isNavi) {
+      if (typeof type === 'string') {
+        if (type === 'showed') {
+          this.storeInfoBarStatus = 'store-info-bar-closed-showed';
+        } else if (type === 'closed') {
+          this.storeInfoBarStatus = 'store-info-bar-showed-closed';
+          if (typeof isNavi === 'boolean') {
+            return
+          }
+          this.toggleControllerBarStatus('showed');
+        }
+        return;
+      }
+      if (this.storeInfoBarStatus === '') {
+        this.storeInfoBarStatus = 'store-info-bar-closed-showed';
+        return;
+      }
+      console.log(this.storeInfoBarStatus);
+      this.storeInfoBarStatus = this.storeInfoBarStatus === 'store-info-bar-showed-closed' ? 'store-info-bar-closed-showed' : 'store-info-bar-showed-closed';
+
+    },
+
+
+    //防止事件穿透
+    preventEventPenetration: function () {
+
+    },
+
+    viewStoreDetail: function () {
+      prompt.showToast({
+        message: '暂不支持',
+        duration: 2000,
+      })
+    },
+    //暂时废弃
+    // updateLocation: async function () {
+    //   // if(this.locationUpdateIntervalID){
+    //   //   clearInterval(this.locationUpdateIntervalID)
+    //   //   return
+    //   // }
+    //   console.log("更新位置");
+    //   let cameraid = -1;
+    //   if (global.productiontip !== 'dev') {
+    //     bt(bluetooth, this.universalRefreshProcess.bind(this))
+    //     console.log("AFTER BT() ")
+    //   } else {
+    //     this.locationUpdateIntervalID = setInterval(() => {
+    //       this.universalRefreshProcess(cameraid)
+    //     }, 200)
+    //   }
+    // },
+
+    universalRefreshProcess(val) {
+      // console.log("当前用户所在楼层", this.curUserFloorNum)
+      // console.log(this.curUserFloorNum)
+      const msg = { type: 'loc', detail: { x: this.curX, y: this.curY, floorNum: this.curUserFloorNum, direction: this.curDirection } };
+      this.postToWeb(msg)
+    },
+
+    randomCurLocationInfoGenerator() {
+      let xRange = [mapObject.minX, mapObject.maxX];
+      let yRange = [mapObject.minY, mapObject.maxY];
+      let randX =
+        Math.floor(Math.random() * Math.ceil(xRange[1] - xRange[0])) + xRange[0];
+      let randY =
+        Math.floor(Math.random() * Math.ceil(yRange[1] - yRange[0])) + yRange[0];
+      let randDirection = Math.floor(Math.random() * 360);
+      return { randX, randY, randDirection };
+    },
+
+    toggleSearchBar: function (type) {
+      // console.log(type);
+      console.log(this.searchBarStatus)
+      if (typeof type === 'string') {
+        if (type === 'showed') {
+          this.searchBarStatus = 'search-bar-closed-showed';
+        } else if (type === 'closed' && this.searchBarStatus === 'search-bar-closed-showed') {
+          this.searchBarStatus = 'search-bar-showed-closed';
+        }
+        return
+      }
+      if (this.searchBarStatus === '') {
+        this.searchBarStatus = 'search-bar-closed-showed'
+        return
+      }
+
+      this.searchBarStatus = this.searchBarStatus === 'search-bar-closed-showed' ? 'search-bar-showed-closed' : 'search-bar-closed-showed';
+    },
+
+    openSearchBar() {
+      if (this.controllerBarStatus === 'controller-bar-minied-showed') {
+        this.toggleControllerBarStatus('minied');
+      }
+      if (this.storeInfoBarStatus === 'store-info-bar-closed-showed') {
+        this.toggleStoreInfoBar('closed');
+      }
+      setTimeout(() => {
+        this.toggleSearchBar('showed');
+      }, 100);
+    },
+
+    closeSearchBar() {
+      this.$element('search-bar-input').focus({ focus: false });
+      this.toggleSearchBar('closed');
+      if (this.storeInfoBarStatus === 'store-info-bar-closed-showed') {
+        this.toggleStoreInfoBar('closed');
+      }
+      setTimeout(() => {
+        this.toggleControllerBarStatus('showed');
+      }, 500)
+      //设置为-1会导致已渲染的崩溃
+      setTimeout(() => {
+        this.searchResult = []
+        this.isSearching = false;
+        this.searchValue = '';
+      }, 500)
+    },
+
+    openStoreInfoBar() {
+      if (this.searchBarStatus === 'search-bar-closed-showed') {
+        this.toggleSearchBar('closed');
+        setTimeout(() => {
+          this.searchResult = []
+          this.isSearching = false;
+          this.searchValue = '';
+        }, 500)
+      }
+      if (this.controllerBarStatus === 'controller-bar-minied-showed') {
+        this.toggleControllerBarStatus('minied');
+      }
+      setTimeout(() => {
+        this.toggleStoreInfoBar('showed');
+
+      }, 300)
+    },
+
+    closeStoreInfoBar() {
+      this.toggleSearchBar('closed');
+      this.toggleStoreInfoBar('closed');
+      setTimeout(() => {
+        this.toggleControllerBarStatus('showed');
+      }, 300)
+    },
+
+    openControllerBar() {
+      if (this.searchBarStatus === 'search-bar-closed-showed') {
+        this.toggleSearchBar('closed');
+        setTimeout(() => {
+          this.searchResult = []
+          this.isSearching = false;
+          this.searchValue = '';
+        }, 500)
+      }
+      if (this.storeInfoBarStatus === 'store-info-bar-closed-showed') {
+        this.toggleStoreInfoBar('closed');
+      }
+      setTimeout(() => {
+        this.toggleControllerBarStatus('showed');
+      }, 300)
+    },
+
+    //该方法只在naviBegin中调用
+    openNavigationBar() {
+      if (this.storeInfoBarStatus === 'store-info-bar-closed-showed') {
+        this.toggleStoreInfoBar('closed', true);
+      }
+      this.navigationBarStatus = 'navigation-bar-closed-showed';
+    },
+
+    //该方法在NaviEnd自动执行 或者用户取消导航时执行
+    closeNavigationBar() {
+      if (this.navigationBarStatus === 'navigation-bar-closed-showed') {
+        this.navigationBarStatus = 'navigation-bar-showed-closed'
+      }
+      setTimeout(() => {
+        this.navigationDescription = {
+          name: '未知',
+          desc: '正在加载',
+          next: '正在加载',
+          time: '未知',
+          remain: '未知',
+        }
+      }, 500)
+    },
+
+    showRoutes: async function () {
+      // 正常的逻辑 用自身id去
+      const that = this;
+      if (global.productiontip === 'dev') {
+        const res = await fetch.fetch({
+          url: `${baseUrl}/navigateWithAStar?cameraid=${that.curCameraID}&destCameraId=${that.curStoreInfo.id}`
+        }).catch(err => {
+          console.log(err);
+        });
+        console.log("路线展示");
+        const result = res.data;
+        console.log(result.code);
+        console.log(result.data);
+        if (result.code === 200) {
+          if (result.data === "") {
+            prompt.showToast({
+              message: "无法到达该点，请查看紧急事件"
+            })
+            return
+          }
+          const routeMsg = {
+            type: 'route',
+            detail: JSON.parse(result.data)
+          }
+          this.postToWeb(routeMsg);
+        } else if (result.code === 502) {
+          prompt.showToast({
+            message: '没有找到可行的路线'
+          })
+        } else if (result.code === 404) {
+          prompt.showToast({
+            message: '不可导航点'
+          })
+        } else {
+          prompt.showToast({
+            message: `位置错误${result.code}`
+          })
+        }
+
+      }
+    },
+    beginNavigation: async function () {
+      const that = this;
+      if (global.productiontip === 'dev') {
+        const res = await fetch.fetch({
+          url: `${baseUrl}/navigateWithAStar?cameraid=${that.curCameraID}&destCameraId=${that.curStoreInfo.id}`
+        }).catch(err => {
+          console.log(err);
+        });
+        console.log("开始导航");
+        const result = res.data;
+        console.log(result.code);
+        console.log(result.data === "");
+        if (result.code === 200) {
+          if (result.data === "") {
+            prompt.showToast({
+              message: "无法到达该点，请查看紧急事件"
+            })
+            return
+          }
+          const naviMsg = {
+            type: 'navi',
+            detail: JSON.parse(result.data)
+          }
+          clearInterval(this.locationUpdateIntervalID);
+          this.navigationDescription.name = that.curStoreInfo.name;
+          this.postToWeb(naviMsg);
+          this.destinationCameraID = that.curStoreInfo.id; //更新终点坐标
+
+        } else if (result.code === 502) {
+          prompt.showToast({
+            message: '没有找到可行的路线'
+          })
+        } else if (result.code === 404) {
+          prompt.showToast({
+            message: '路径源地址不存在'
+          })
+        } else {
+          prompt.showToast({
+            message: `位置错误${result.code}`
+          })
+        }
+
+      }
+    },
+    focusOnStore: async function (id, name) {
+      this.$element('search-bar-input').focus({ focus: false });
+      console.log("聚焦")
+      console.log(id);
+      const focusMsg = {
+        type: 'focus',
+        detail: id
+      }
+      this.postToWeb(focusMsg);
+      this.curStoreInfo.id = id;
+      this.curStoreInfo.name = name;
+      this.openStoreInfoBar();
+      let res = await fetch.fetch({
+        url: `${baseUrl}/getCamera?id=${id}`
+      }).catch(err => console.log(err));
+      const result = res.data;
+      if (result.code === 200) {
+        console.log("导航")
+        const d = JSON.parse(result.data)
+        this.curStoreInfo.location = d.logicalPosition;
+        this.curStoreInfo.distance = this.calcDistanceByLL(d.latitude, d.longitude);
+      }
+    },
+
+    // 经纬转米
+    calcDistanceByLL: function (x, y) {
+      const that = this;
+      let [x1, y1] = Mercator2lonLat(x, y);
+      let [x2, y2] = Mercator2lonLat(this.curX, this.curY);
+      return getDistanceByLL(x1, y1, x2, y2);
+    },
+    moreTools: function () {
+      prompt.showToast({
+        message: '敬请期待!'
+      })
+    },
+    focusMySelf: function () {
+      this.postToWeb('focusMyLoc');
+    },
+    resetNavigation: function () {
+      this.cannotCancel = true;
+      setTimeout(() => {
+        this.cannotCancel = false;
+      }, 3000)
+      this.postToWeb("RESETNAVI");
+    },
+    cancelNavigation: function () {
+      if (!this.cannotCancel) {
+        this.destinationCameraID = this.curCameraID;
+        this.postToWeb("CANCELNAVI");
+      } else {
+        prompt.showToast({
+          message: '导航准备阶段不可取消'
+        })
+      }
+    },
+
+    async showEmergencyEvents() {
+      const res = await fetch.fetch({
+        url: `${baseUrl}/getCurrentAccidents`
+      }).catch(err => {
+        console.error(err);
+      })
+      const result = res.data;
+      if (result.code === 200) {
+        const acList = JSON.parse(result.data);
+        if (acList.length === 0) {
+          prompt.showToast({
+            message: '无紧急事件'
+          })
+          return;
+        }
+        const acMsg = {
+          type: 'accidents',
+          detail: acList
+        }
+        this.postToWeb(acMsg);
+      } else {
+        prompt.showToast({
+          message: "显示紧急事件出错"
+        })
+      }
+    },
+
+    notSupported() {
+      prompt.showToast({
+        message: "暂不支持，后续增加"
+      })
+    },
+    onVipCoupon: function () {
+      storage.get({
+        key: 'isVIP',
+        success: function (data) {
+          console.log("success ", data);
+          if (!data) {
+            prompt.showToast({
+              message: "开通VIP即可获得专项优惠～"
+            })
+          } else {
+            prompt.showToast({
+              message: "您已获得VIP专项优惠!"
+            })
+          }
+        },
+        fail: function (data, code) {
+          console.log(`handling fail, code = ${code}`)
+        }
+      })
+    },
+    onNormalCoupon: function () {
+      prompt.showToast({
+        message: "您已获得普通用户优惠!"
+      })
+    },
+    onScrollBottom: function (type) {
+      console.log(type);
+      switch (type) {
+        case 'normal':
+          this.normalCoupons.push(...[
+            {
+              imgID: 123,
+              title: '海盐黑金咖啡',
+              oldPrice: '¥51',
+              newPrice: '¥25.5',
+              store: '海岩咖啡'
+            },
+            {
+              imgID: 129,
+              title: '奶茶三兄弟',
+              oldPrice: '¥6.5',
+              newPrice: '¥13',
+              store: 'CoCo都可'
+            },
+            {
+              imgID: 133,
+              title: '海底捞30元优惠券',
+              oldPrice: '¥30',
+              newPrice: '¥28.8',
+              store: '海底捞'
+            },
+            {
+              imgID: 134,
+              title: '夏威夷水果披萨9寸',
+              oldPrice: '¥19.9',
+              newPrice: '¥9.9',
+              store: '大嘴巴意式披萨'
+            },
+          ]);
+          console.log(this.normalCoupons.length)
+
+          break;
+        case 'vip':
+          this.vipCoupons.push(...[
+            {
+              imgID: 110,
+              title: '海盐黑金咖啡',
+              oldPrice: '¥51',
+              newPrice: '¥15.5',
+              store: '海岩咖啡'
+            },
+            {
+              imgID: 141,
+              title: '奶茶三兄弟',
+              oldPrice: '¥3.5',
+              newPrice: '¥13',
+              store: 'CoCo都可'
+            },
+            {
+              imgID: 132,
+              title: '海底捞30元优惠券',
+              oldPrice: '¥30',
+              newPrice: '¥25.8',
+              store: '海底捞'
+            },
+            {
+              imgID: 131,
+              title: '夏威夷水果披萨9寸',
+              oldPrice: '¥19.9',
+              newPrice: '¥5.9',
+              store: '大嘴巴意式披萨'
+            }
+          ]);
+          console.log(this.vipCoupons.length)
+          break;
+      }
+    }
+
+
+  }
+</script>

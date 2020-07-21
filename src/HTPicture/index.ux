@@ -1,0 +1,647 @@
+<template>
+  <!-- Only one root node is allowed in template. -->
+  <div class="container">
+    <div class="map-hero">
+      <div class="map-container">
+
+        <canvas id="map">
+
+        </canvas>
+      </div>
+      <div class="legend">
+        <div class="legend-item">
+          <image class="lipic" src="../Common/user_pos.svg"></image>
+          <text class="litxt">{{$t('message.HTP.legend.user_pos')}}</text>
+        </div>
+        <div class="legend-item">
+          <image class="lipic" src="../Common/range.png"></image>
+          <text class="litxt">{{$t('message.HTP.legend.ht_level')}}</text>
+        </div>
+        <div class="legend-item">
+          <image class="lipic" src="../Common/camera.svg"></image>
+          <text class="litxt">{{$t('message.HTP.legend.camera_pos')}}</text>
+        </div>
+      </div>
+      <div class="floor_selector">
+        <text class="desc">{{$t('message.HTP.floor_selector.desc')}}</text>
+        <select id="floor_select" onchange="changefloor" class="floor_select">
+          <option value="5" selected="{{curFloor===5?true:false}}" class="floor_opinion">5层</option>
+          <option value="4" selected="{{curFloor===4?true:false}}" class="floor_opinion">4层</option>
+          <option value="3" selected="{{curFloor===3?true:false}}" class="floor_opinion">3层</option>
+          <option value="2" selected="{{curFloor===2?true:false}}" class="floor_opinion">2层</option>
+          <option value="1" selected="{{curFloor===1?true:false}}" class="floor_opinion">1层</option>
+        </select>
+      </div>
+    </div>
+    <div class="main">
+      <div class="navigation">
+        <input type="text" id="input_value" class="search_input" placeholder="输入您要去的楼内场所" onchange="search_value_changed" />
+        <image src="../Common/search3.svg" class="search_btn" onclick="searchPlace"></image>
+      </div>
+      <div class="route" if="{{route!==null?true:false}}">
+        <text class="route-title">{{'路线:前往'+search_value}}</text>
+        <div class="path_container" for="{{route.path}}" if="{{found}}">
+          <div class="path-item">
+            <text class="inner_text">{{$item.nodeName}}</text>
+          </div>
+
+          <image class="path-pointer" src="../Common/down.svg" if="{{route.path.length-1!==$idx}}"></image>
+        </div>
+        <text class="not_found" else="{{found}}">没找到通往该节点的路径，可能是您的输入有误</text>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<style>
+  .container {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-content: center;
+    align-items: center;
+  }
+
+  .title {
+    font-size: 100px;
+  }
+
+  .map-hero {
+    flex-direction: column;
+    background-color: #008df8;
+    width: 100%;
+    align-items: center;
+    justify-content: space-around;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    /* margin-bottom: 30px; */
+    /* border-bottom-left-radius: 30px;
+                                                              border-bottom-right-radius: 30px; */
+  }
+
+  .map-container {
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 20px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+  }
+  #map {
+    width: 640px;
+    height: 640px;
+  }
+
+  .legend {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    width: 680px;
+    border-radius: 20px;
+    background-color: white;
+    justify-content: space-around;
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
+
+  .lipic {
+    width: 40px;
+    height: 40px;
+  }
+
+  .litxt {
+    font-weight: 600;
+    color: #111;
+    font-size: 25px;
+    margin-left: 10px;
+  }
+
+  .floor_selector {
+    width: 680px;
+    justify-content: space-around;
+    background-color: white;
+    border-radius: 10px;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+  }
+
+  .floor_selector .desc {
+    font-weight: 600;
+    color: #111;
+  }
+
+  .floor_selector .floor_opinion {
+    background-color: white;
+    /* color:#fff; */
+    font-weight: 600;
+  }
+
+  .main {
+    background-color: white;
+    padding: 30px;
+    /* padding-top: 100px; */
+    width: 100%;
+    margin-top: -30px;
+    border-top-right-radius: 30px;
+    border-top-left-radius: 30px;
+    justify-content: space-around;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .navigation {
+    width: 100%;
+    /* margin-top: 30px; */
+    margin-bottom: 30px;
+    padding-top: 30px;
+    padding-bottom: 30px;
+
+    justify-content: center;
+    align-items: center;
+  }
+
+  .search_input {
+    background-color: white;
+    border-radius: 20px;
+    padding: 20px;
+    border: 5px solid #ccc;
+    width: 80%;
+    font-size: 25px;
+    font-weight: 600;
+    margin-right: 20px;
+  }
+
+  .search_btn {
+    width: 64px;
+    height: 64px;
+    /* background-color: #000000; */
+  }
+
+  .route {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .route .route-title {
+    font-size: 40px;
+    color: #111;
+    font-weight: 700;
+  }
+
+  .path_container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .path_container .path-item {
+    width: 100%;
+    padding: 20px;
+    background-color: white;
+    font-size: 42px;
+    font-weight: 600;
+  }
+
+  .path_container .path-pointer {
+    height: 32px;
+    width: 32px;
+  }
+  .not_found {
+    font-size: 40px;
+    font-weight: 600;
+    width: 75%;
+    text-align: center;
+    padding: 30px;
+    border-radius: 15px;
+  }
+</style>
+
+<script>
+  import fetch from '@system.fetch';
+  import prompt from '@system.prompt';
+  import { baseUrl } from '../const'
+  module.exports = {
+    protected: {
+      inner_pos: '',
+      title: '人流量图与导航',
+      //绘图相关
+      building_basepoints: null,
+      curFloor: 2,
+      allcameras: null,
+      firstDraw: true,
+
+
+      // search value
+      search_value: '',
+      route: null,
+      found: false,
+
+
+      //解决联盟ide的蜜汁bug
+      isUnionIde: false
+    },
+    onInit: function () {
+      // console.log("aaaaa",typeof this.inner_pos)
+      if (this.inner_pos != '') {
+        this.inner_pos = JSON.parse(this.inner_pos)
+        console.log("after Converted,latitude", this.inner_pos.latitude)
+      } else {
+        console.error("服务未启动!");
+      }
+
+    },
+    onShow: async function () {
+      console.log("show");
+      this.$page.setTitleBar({
+        text: "人流量图与导航",
+        backgroundColor: '#008df8'
+      });
+
+      let that = this
+      //显示时开始拿去数据
+      //首先开启蓝牙拿到附近位置的设备列表然后，用相机id去拿到当前位置
+      // console.log("2:", this.inner_pos);
+      // 首先需要: 拿到建筑的基准点作为画图的依据
+      let res = await fetch.fetch({
+        url: `${baseUrl}/getBasePoints`
+      }).catch(error => {
+        console.log("Handling fail, error = ", error);
+      })
+
+      let result = res.data
+      if (result.code === 200) {
+        this.building_basepoints = JSON.parse(result.data)
+        console.log(typeof this.building_basepoints)
+        console.log("建筑的基准点", this.building_basepoints[0]);
+      } else {
+        console.log("GetBasePoints Faild, Code", result.code)
+      }
+
+      // 重复那个过程 扫描id，拿位置，
+      // res = await fetch
+      //   .fetch({
+      //     url: `${baseUrl}/getCamera?id=79`,
+      //   }).catch(error => {
+      //     console.log(`handling fail, errMsg = ${error.data}`)
+      //     console.log(`handling fail, errCode = ${error.code}`)
+      //   })
+
+      // result = res.data
+
+      // console.log(`the status code of the response: ${result.code}`)
+      // // console.log(`the data of the response: ${result.data}`)
+      // // console.log(`the headers of the response: ${JSON.stringify(result.headers)}`)
+      // if (result.code === 200) {
+      //   this.inner_pos = JSON.parse(result.data);
+      //   console.log("获取到的自己的位置: ", this.inner_pos);
+      //   this.curFloor = this.inner_pos.floor; //设置当前楼层 
+      // } else {
+      //   console.log("Get Position Failed, Code", result.code)
+      // }
+
+
+      //开始绘制
+
+      let canvas = this.$element('map')
+      let ctx = canvas.getContext('2d')
+      if (typeof canvas.width === "undefined") {
+        console.log("联盟ide")
+        this.isUnionIde = true;
+      }
+
+      ctx.clearRect(0, 0, this.isUnionIde ? 640 : canvas.width, this.isUnionIde ? 640 : canvas.height); //清空rect
+
+      // 绘制楼层模型图
+      await this.ctxDrawImage(ctx, `../Common/maps/map${this.curFloor}f.jpg`, 0, 0, this.isUnionIde ? 640 : canvas.width, this.isUnionIde ? 640 : canvas.height).catch(err => {
+        console.log("Loaded Failed, Error = ", err);
+      })
+
+      // ctx.fillStyle = 'rgb(200,0,0)'
+      // ctx.fillRect(20, 20, 200, 200)
+
+      // //绘制另一个矩形
+      // ctx.fillStyle = 'rgba(0, 0, 200, 0.5)'
+      // ctx.fillRect(80, 80, 200, 200)
+
+      // ctx.fillStyle = 'rgba(0,0,0,1)'
+      // ctx.fillRect(0, 0, 640, 640)
+
+
+      // 画出用户所在位置
+      let userPos = this.ll2CanvasCoor(this.inner_pos.latitude, this.inner_pos.longitude, this.isUnionIde ? 640 : canvas.width, this.isUnionIde ? 640 : canvas.height)
+      setTimeout(() => {
+
+        this.ctxDrawImage(ctx, `../Common/user_pos.png`, userPos[0] - 25, userPos[1] - 45, 50, 50).catch(err => {
+          console.log("Loaded Failed, Error = ", err);
+        })
+
+      }, 200);
+
+
+      // 画出相机所在位置
+      // 获取所有相机
+      res = await fetch.fetch({
+        url: `${baseUrl}/getAllCamera`
+      }).catch(err => { console.log("Failed, ", err); })
+      result = res.data;
+      if (result.code === 200) {
+        let cameras = result.data;
+        this.allcameras = await JSON.parse(cameras); // 本地缓存
+        this.allcameras.forEach(element => {
+          if (element.floor === this.curFloor) {
+            let camera_pos = this.ll2CanvasCoor(element.latitude, element.longitude, this.isUnionIde ? 640 : canvas.width, this.isUnionIde ? 640 : canvas.height)
+            let camera_center_pos_x = camera_pos[0] - 15
+            let camera_cener_pos_y = camera_pos[1] - 24
+            // 画人
+
+            let ht_unsafe_color = 'rgba(196,25,25,40)'
+            let ht_safe_color = 'rgba(0,251,82,40)'
+            if (element.nums > element.threshold / 2 || !element.isfree) {
+              ctx.fillStyle = ht_unsafe_color;
+            } else {
+              ctx.fillStyle = ht_safe_color;
+            }
+            let range = 30 // 左右50像素范围内
+            for (let i = 0; i < element.nums; i++) {
+              let randNum1 = Math.floor(Math.random() * (range * 2 + 1) - range);
+              let randNum2 = Math.floor(Math.random() * (range * 2 + 1) - range);
+              ctx.fillRect(camera_center_pos_x + randNum1, camera_cener_pos_y + randNum2, 5, 5)
+            }
+            //画相机
+            this.ctxDrawImage(ctx, '../Common/camera.png', camera_center_pos_x, camera_cener_pos_y, 30, 30)
+
+          }
+        });
+      }
+
+
+      this.firstDraw = false
+
+
+    },
+    changefloor: async function (evt) {
+      console.log("Change To ", evt.newValue);
+      if (evt.newValue != this.curFloor) {
+        this.curFloor = evt.newValue;
+      }
+      console.log("Current Floor: ", this.curFloor);
+
+      if (this.firstDraw) {
+        //第一次渲染直接退出
+        return
+      }
+
+
+      let canvas = this.$element('map')
+      let ctx = canvas.getContext('2d')
+      ctx.clearRect(0, 0, this.isUnionIde ? 640 : canvas.width, this.isUnionIde ? 640 : canvas.height)
+      await this.ctxDrawImage(ctx, `../Common/maps/map${this.curFloor}f.jpg`, 0, 0, this.isUnionIde ? 640 : canvas.width, this.isUnionIde ? 640 : canvas.height).catch(err => {
+        console.log("Loaded Failed, Error = ", err);
+      })
+
+      let userPos = this.ll2CanvasCoor(this.inner_pos.latitude, this.inner_pos.longitude, this.isUnionIde ? 640 : canvas.width, this.isUnionIde ? 640 : canvas.height)
+      console.log(this.inner_pos.floor);
+      console.log(this.curFloor);
+      if (this.inner_pos.floor == this.curFloor) {
+        console.log("Is here")
+        setTimeout(() => {
+
+
+          this.ctxDrawImage(ctx, `../Common/user_pos.png`, userPos[0] - 25, userPos[1] - 45, 50, 50).catch(err => {
+            console.log("Loaded Failed, Error = ", err);
+          })
+
+
+        }, 200);
+      }
+
+      this.allcameras.forEach(element => {
+        if (element.floor == this.curFloor) {
+          let camera_pos = this.ll2CanvasCoor(element.latitude, element.longitude, this.isUnionIde ? 640 : canvas.width, this.isUnionIde ? 640 : canvas.height)
+          let camera_center_pos_x = camera_pos[0] - 15
+          let camera_cener_pos_y = camera_pos[1] - 24
+          // 画人
+
+          let ht_unsafe_color = 'rgba(196,25,25,40)'
+          let ht_safe_color = 'rgba(0,251,82,40)'
+          if (element.nums > element.threshold / 2 || !element.isfree) {
+            ctx.fillStyle = ht_unsafe_color;
+          } else {
+            ctx.fillStyle = ht_safe_color;
+          }
+          let range = 30 // 左右50像素范围内
+          for (let i = 0; i < element.nums; i++) {
+            let randNum1 = Math.floor(Math.random() * (range * 2 + 1) - range);
+            let randNum2 = Math.floor(Math.random() * (range * 2 + 1) - range);
+            ctx.fillRect(camera_center_pos_x + randNum1, camera_cener_pos_y + randNum2, 5, 5)
+          }
+          //画相机
+          this.ctxDrawImage(ctx, '../Common/camera.png', camera_center_pos_x, camera_cener_pos_y, 30, 30)
+
+        }
+      })
+
+
+
+      // 如果当前有路径，也会自动画上去
+      setTimeout(() => {
+
+        if (this.found) {
+          console.log("继续drawpath")
+          this.drawPath()
+        }
+      }, 400);
+
+    },
+    searchPlace: async function () {
+      this.$element('input_value').focus({ focus: false })
+      //将名字转换成id或者将id转换成名字
+      let that = this
+      console.log(this.search_value)
+      if (this.search_value === "") {
+        prompt.showToast({
+          message: '请输入目的地再搜索',
+          duration: 2000
+        })
+      } else {
+        let res = await fetch.fetch({
+          url: `${baseUrl}/getBestPathWithDest?cameraid=${that.inner_pos.id}&destCameraId=${that.search_value}`
+        }).catch(err => { console.log("handling fail, error: ", err); })
+        console.log("code: " + res.data.code);
+
+        if (res.data.code === 200) {
+          this.found = true;
+          console.log("data: " + res.data.data);
+          this.route = JSON.parse(res.data.data)
+          // console.log("route: ", this.route.path)
+          //绘制地图
+          this.changefloor({ newValue: this.curFloor }) //通过修改楼层的方式完成全部的重绘
+
+        } else {
+          this.found = false;
+          console.log("Error Found Code = ", res.data.code);
+          if (res.data.code == 404) {
+            prompt.showToast({
+              message: '没有找到该节点，输入有误',
+              duration: 2000
+            })
+
+          } else if (res.data.code == 502) {
+            prompt.showToast({
+              message: '无有效路径',
+              duration: 2000
+            })
+          } else {
+            prompt.showToast({
+              message: '未知错误',
+              duration: 2000
+            })
+          }
+
+        }
+      }
+    },
+    search_value_changed: function (evt) {
+      this.search_value = evt.value
+    },
+
+    id2name: async function (cameraid) {
+      let that = this
+      let name = ''
+      let res = await fetch
+        .fetch({
+          url: `${baseUrl}/getCamera?id=${cameraid}`,
+        }).catch(error => {
+          console.log("handling fail, code = " + error);
+          return "Cannot Found This Camera"
+        })
+      console.log(res);
+      console.log("code: " + res.data.code);
+      console.log("data: " + res.data.data);
+      if (res.data.code === 200) {
+        let re = JSON.parse(res.data.data)
+        console.log("re: ", re.position);
+        name = re.position
+      }
+      return name
+    },
+
+    ll2CanvasCoor(latitude, longitude, canvas_width, canvas_height) {
+      console.log(`canvas width:${canvas_width},canvas height:${canvas_height}`);
+      let canvas_x = 0; // 对应到canvas坐标系中的x
+      let canvas_y = 0; // 对应到canvas坐标系中的y
+
+
+      let left_vertical = false;
+      let top_horizontal = false;
+
+      console.log(this.building_basepoints[0][0]);
+      // console.log(typeof this.building_basepoints[0]);
+      let lb = this.building_basepoints[0]
+      let rb = this.building_basepoints[1]
+      let lt = this.building_basepoints[2]
+      let rt = this.building_basepoints[3]
+      // k1 b1 求x
+      // k2 b2 求y
+      console.log(`lb:${lb},rb:${rb},lt:${lt},rt:${rt}`)
+      let k1, b1, k2, b2;
+      k1 = (lt[0] - lb[0]) / (lt[1] - lb[1]);
+      k2 = (lt[0] - rt[0]) / (lt[1] - rt[1]);
+      b1 = (lb[1] - k1 * lb[0])
+      b2 = (lt[1] - k2 * lt[0])
+      // k1*x-y+b1 = 0
+      // k2*x-y+b2 = 0
+      // 点到直线距离公式 |k1*x0 - y0 + b|/√k1*k1+(-1)*(-1)
+      console.log(`k1:${k1},k2:${k2},b1:${b1},b2:${b2}`);
+      if (k1 === 0) {
+        console.log("左边线段垂直");
+        left_vertical = true;
+      }
+      if (!Number.isFinite(k2)) {
+        console.log("上边线段水平");
+        top_horizontal = true;
+      }
+      if (left_vertical) {
+        canvas_x = latitude - lt[0]
+      } else {
+        canvas_x = Math.abs(k1 * latitude - longitude + b1) / Math.sqrt(k1 * k1 + (-1) * (-1))
+      }
+
+      if (top_horizontal) {
+        canvas_y = lt[1] - longitude
+        // console.log(`lt[1]:${lt[1]},longitude:${longitude},y:${canvas_y}`)
+      } else {
+        canvas_y = Math.abs(k2 * latitude - longitude + b2) / Math.sqrt(k2 * k2 + (-1) * (-1))
+      }
+
+      //求比例
+      let aspect_x = canvas_width / Math.sqrt((rt[0] - lt[0]) * (rt[0] - lt[0]) + (rt[1] - lt[1]) * (rt[1] - lt[1]))
+      let aspect_y = canvas_height / Math.sqrt((lt[0] - lb[0]) * (lt[0] - lb[0]) + (lt[1] - lb[1]) * (lt[1] - lb[1]))
+
+      canvas_x *= aspect_x
+      canvas_y *= aspect_y
+      console.log(`x:${canvas_x},y:${canvas_y}`);
+      return [canvas_x, canvas_y]
+    },
+
+    async ctxDrawImage(ctx, path, x, y, width = 0, height = 0) {
+      let img = new Image()
+      img.src = path
+      return new Promise(function (resolve, reject) {
+        img.onload = async () => {
+          console.log(`图像加载完成:${path}`);
+          if (width === 0 || height === 0) {
+            await ctx.drawImage(img, x, y);
+          } else {
+            await ctx.drawImage(img, x, y, width, height)
+          }
+          resolve()
+        }
+        img.onerror = (e) => {
+          console.log("图像加载出错");
+          reject(e)
+        }
+      })
+    },
+
+
+    drawPath() {
+      let canvas = this.$element('map')
+      let ctx = canvas.getContext('2d')
+      // console.log(this.allcameras);
+
+      ctx.lineWidth = 10
+      ctx.lineCap = 'round'
+      ctx.beginPath()
+      let count = 0;
+      this.route.path.forEach(i => {
+
+        console.log(i);
+        let res = this.allcameras.find(ele => ele.id == i.nodeid)
+        console.log("res", res);
+        if (res.floor == this.curFloor) {
+
+          let respos = this.ll2CanvasCoor(res.latitude, res.longitude, this.isUnionIde ? 640 : canvas.width, this.isUnionIde ? 640 : canvas.height)
+          if (count === 0) {
+            ctx.moveTo(respos[0], respos[1] - 5);
+            console.log(`移动到 ${respos[0]}, ${respos[1]}`);
+          } else {
+
+            ctx.lineTo(respos[0], respos[1] - 5)
+            console.log(`绘制到 ${respos[0]}, ${respos[1]}`);
+          }
+          count += 1;
+        }
+      })
+      // ctx.closePath()
+      ctx.stroke()
+
+    },
+
+
+    refreshAndDraw() {
+      // 刷新并重绘页面
+
+      // NotDoneYet
+    }
+  }
+</script>

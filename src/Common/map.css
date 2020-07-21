@@ -1,0 +1,69 @@
+.map-hero {
+    flex-direction: column;
+    background-color: #008df8;
+    width: 100%;
+    align-items: center;
+    justify-content: space-around;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    /* margin-bottom: 30px; */
+    /* border-bottom-left-radius: 30px;
+                                                        border-bottom-right-radius: 30px; */
+  }
+
+  .map-container {
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 20px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+  }
+  #map {
+    width: 640px;
+    height: 640px;
+  }
+
+  .legend {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    width: 680px;
+    border-radius: 20px;
+    background-color: white;
+    justify-content: space-around;
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
+
+  .lipic {
+    width: 40px;
+    height: 40px;
+  }
+
+  .litxt {
+    font-weight: 600;
+    color: #111;
+    font-size: 25px;
+    margin-left: 10px;
+  }
+
+  .floor_selector {
+    width: 680px;
+    justify-content: space-around;
+    background-color: white;
+    border-radius: 10px;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+  }
+
+  .floor_selector .desc {
+    font-weight: 600;
+    color: #111;
+  }
+
+  .floor_selector .floor_opinion {
+    background-color: white;
+    /* color:#fff; */
+    font-weight: 600;
+  }

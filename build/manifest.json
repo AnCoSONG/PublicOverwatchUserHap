@@ -1,0 +1,165 @@
+{
+  "package": "com.people.final1",
+  "name": "Public Overwatch",
+  "versionName": "1.2.3",
+  "versionCode": 1,
+  "icon": "/Common/mylogo.png",
+  "minPlatformVersion": 1060,
+  "features": [
+    {
+      "name": "system.configuration"
+    },
+    {
+      "name": "system.router"
+    },
+    {
+      "name": "system.prompt"
+    },
+    {
+      "name": "system.shortcut"
+    },
+    {
+      "name": "system.fetch"
+    },
+    {
+      "name": "system.bluetooth"
+    },
+    {
+      "name": "system.notification"
+    },
+    {
+      "name": "system.geolocation"
+    },
+    {
+      "name": "system.resident"
+    },
+    {
+      "name": "service.push"
+    },
+    {
+      "name": "system.card"
+    },
+    {
+      "name": "system.storage"
+    },
+    {
+      "name": "system.audio"
+    },
+    {
+      "name": "system.sensor"
+    },
+    {
+      "name": "system.webview"
+    }
+  ],
+  "permissions": [
+    {
+      "origin": "*"
+    }
+  ],
+  "config": {
+    "logLevel": "debug",
+    "background": {
+      "features": [
+        "system.app",
+        "system.fetch",
+        "system.console",
+        "system.notification",
+        "system.bluetooth",
+        "system.geolocation"
+      ]
+    }
+  },
+  "router": {
+    "entry": "Index",
+    "pages": {
+      "Index": {
+        "component": "index"
+      },
+      "Urgency": {
+        "component": "index",
+        "path": "/Urgency"
+      },
+      "HTPicture": {
+        "component": "index",
+        "path": "/HTPicture"
+      },
+      "EmergencyEvents": {
+        "component": "index",
+        "path": "/EmergencyEvents"
+      },
+      "Card": {
+        "component": "infocard",
+        "path": "/Card"
+      },
+      "Indoor": {
+        "component": "Indoor",
+        "path": "/Indoor"
+      },
+      "EmergencyPath": {
+        "component": "index",
+        "path": "/EmergencyPath"
+      }
+    }
+  },
+  "display": {
+    "statusBarTextStyle": "light",
+    "backgroundColor": "#ffffff",
+    "pages": {
+      "Index": {
+        "titleBar": true,
+        "titleBarText": "首页",
+        "titleBarTextColor": "#ffffff",
+        "titleBarBackgroundColor": "#008DF8",
+        "menu": true
+      },
+      "Urgency": {
+        "titleBar": true,
+        "titleBarText": "应急路线",
+        "titleBarTextColor": "#ffffff",
+        "titleBarBackgroundColor": "#008DF8",
+        "backgroundColor": "#008DF8"
+      },
+      "HTPicture": {
+        "titleBar": true,
+        "titleBarText": "人流量图与导航",
+        "titleBarTextColor": "#ffffff",
+        "titleBarBackgroundColor": "#008DF8"
+      },
+      "EmergencyEvents": {
+        "titleBar": true,
+        "titleBarText": "紧急事件列表",
+        "titleBarTextColor": "#ffffff",
+        "titleBarBackgroundColor": "#008DF8"
+      },
+      "Indoor": {
+        "titleBar": false,
+        "fullScreen": true,
+        "titleBarText": "室内地图",
+        "titleBarTextColor": "#ffffff",
+        "statusBarImmersive": true,
+        "statusBarBackgroundOpacity": 0,
+        "menu": false
+      }
+    }
+  },
+  "widgets": [
+    {
+      "name": "infocard",
+      "id": "01",
+      "path": "/Card",
+      "component": "infocard",
+      "minPlatformVersion": 1060,
+      "targetManufactorys": [
+        "huawei",
+        "oppo",
+        "xiaomi",
+        "oneplus",
+        "meizu"
+      ],
+      "params": [],
+      "uses-permission": []
+    }
+  ],
+  "debugable": true
+}

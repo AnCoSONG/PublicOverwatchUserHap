@@ -1,0 +1,435 @@
+<template>
+    <div class="card_container">
+        <div class="card_title">
+            <text class="title">{{title}}</text>
+            <image src="http://anco.fun/pictures/icons/refresh.svg" class="refresh_icon {{refreshing?'refreshing':''}}"
+                onclick="refreshCard"></image>
+        </div>
+
+        <div class="main">
+            <text class="each_title">您的位置</text>
+            <text class="each_desc">{{curPos}}</text>
+        </div>
+        <div class="main">
+            <text class="each_title">当前人流量预测</text>
+            <text class="each_desc">{{htPrediction}}</text>
+        </div>
+        <div class="main" onclick="routeTo('EmergencyEvents')">
+            <text class="each_title">当前建筑内紧急事件</text>
+            <text class="each_desc">{{accidents.length===0?"无":accidents.length+"项"}}</text>
+        </div>
+        <div class="btns">
+            <text class="btn" onclick="routeTo('')">查看详细</text>
+            <text class="btn" onclick="routeTo('Urgency')">应急路线</text>
+        </div>
+    </div>
+
+</template>
+<style>
+    .card_container {
+        width: 100%;
+        justify-content: flex-start;
+        flex-direction: column;
+    }
+
+    .card_title {
+        margin: 15px;
+        padding: 15px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card_title .title {
+        font-size: 40px;
+        font-weight: 600;
+        color: #111;
+    }
+
+    .card_title .refresh_icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .main {
+        margin: 15px;
+        margin-left: 30px;
+        margin-right: 30px;
+        padding: 30px;
+        border-radius: 30px;
+        background-color: #008df8;
+        justify-content: space-between;
+    }
+
+    .main .each_title,
+    .main .each_desc {
+        color: white;
+        font-weight: 600;
+        font-size: 35px;
+    }
+
+    .refreshing {
+        animation-name: Rotate;
+        animation-duration: 1s;
+        animation-iteration-count: infinite;
+        animation-timing-function: ease-in-out;
+    }
+    @keyframes Rotate {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .btns {
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 35px;
+        align-items: center;
+    }
+
+    .btns .btn {
+        font-size: 30px;
+        font-weight: 600;
+    }
+</style>
+
+<script>
+    import router from '@system.router';
+    import fetch from '@system.fetch';
+    import prompt from '@system.prompt';
+    import bluetooth from '@system.bluetooth';
+    import geolocation from '@system.geolocation'
+    import { baseUrl } from '../const.js'
+    const injectRef = Object.getPrototypeOf(global) || global
+
+    // 注入regeneratorRuntime
+    injectRef.regeneratorRuntime = require('@babel/runtime/regenerator')
+    // import notification from '@system.notification'
+    import bt from '../Common/bt.js'
+    module.exports = {
+        props: ['title'],
+        data: {
+            refreshing: false,
+            title: '人流量监控  Overwatch',
+            curPos: '未知',
+            pos_detail: null,
+            htPrediction: '未知',
+            accidents: [],
+
+            productiontip: 'dev',
+
+            first_in: false,
+        },
+
+        onInit: function () {
+            console.log("Init");
+
+        },
+
+        async onShow() {
+            //蓝牙拿id
+            await this.refreshCard()
+        },
+
+        refreshCard: async function () {
+
+            if (!this.refreshing) {
+                prompt.showToast({
+                    message: '开始刷新',
+                    duration: 2000,
+                    // gravity: 'center'
+                })
+                this.refreshing = true;
+
+
+                //获取建筑
+                geolocation.getLocationType({
+                    success: function (data) {
+                        console.log(`handling success: locationType = ${data.types}`)
+                    },
+                    fail: function (data, code) {
+                        console.log(`handling fail, code = ${code}`)
+                    }
+                })
+                let geoPos = await this.getLocationPromise().catch(err => { console.log("Get Location err = ", err); })
+                console.log("Get Location Res = ", geoPos)
+                console.log("Typeof geoPos", typeof geoPos);
+                if (typeof geoPos === "undefined") {
+                    geoPos = {
+                        latitude: '30.55517',
+                        longitude: '104.002715'
+                    }
+                } else if (typeof geoPos === "string") {
+                    geoPos = JSON.parse(geoPos)
+                }
+                console.log("start to Get BasePoints")
+                let basePoints = await fetch.fetch({
+                    url: `${baseUrl}/getBasePoints`
+                }).catch(err => { console.log("Handling failed events, err = ", err); })
+                console.log(basePoints)
+                if (basePoints.data.code === 200) {
+                    console.log("成功获取basepoints")
+                    basePoints = JSON.parse(basePoints.data.data)
+                } else {
+                    console.log("Error when get basepoints")
+                    return false
+                }
+                // console.log("????")
+                let isIn = this.isInbuilding(basePoints, geoPos)
+                console.log(isIn)
+                if (!isIn) {
+                    console.log("您不在楼内")
+                    if (this.first_in) {
+                        prompt.showToast({
+                            message: '您已离开Overwatch监控的建筑',
+                            duration: 2000
+                        })
+                        this.first_in = false;
+
+                    }
+                    this.curPos = "未知";
+                    // this.emergency_type = 1;
+                    this.htPrediction = "未知";
+                    this.accidents = [];
+                    this.pos_detail = null;
+
+                    return false;
+                } else {
+                    if (!this.first_in) {
+
+                        prompt.showToast({
+                            message: '您已进入Overwatch监控的建筑',
+                            duration: 2000
+                        })
+                        // notification.show({
+                        //     contentTitle: `您已经进入Overwatch监控的建筑`,
+                        //     contentText: '点此查看详细',
+                        //     clickAction: {
+                        //         uri: '/'
+                        //     }
+                        // })
+
+                        this.first_in = true;
+                    }
+                    // 发送服务卡
+                    // notification.show({
+                    //     contentTitle: `您已经进入Overwatch监控的建筑`,
+                    //     contentText: '点此查看详细',
+                    //     clickAction: {
+                    //         uri: '/'
+                    //     }
+                    // })
+                }
+
+                //第一步刷新蓝牙列表拿到id
+                let id;
+                if (this.productiontip === "dev") {
+                    id = 76638;
+                    await this.refreshProcess(id);
+                } else {
+                    //生产环境需要真实的通过蓝牙获取id
+                    id = 2;
+                    bt(bluetooth, this.refreshProcess.bind(this))
+                }
+            } else {
+                prompt.showToast({
+                    message: '正在刷新',
+                    duration: 500,
+                    // gravity: 'center'
+                })
+            }
+
+        },
+
+        async refreshProcess(val) {
+            console.log("val type:", typeof val)
+            let id;
+            if (typeof val === 'number') {
+                id = val;
+            } else if (typeof val === 'object') {
+                id = val[0].camera_id;
+            }
+
+            //第二步用得到的id开始获取自身位置,存入pos_detail中，pos_detail将作为参数传入下一级页面中
+            console.log("拿取自身位置")
+            let res = await fetch.fetch({
+                url: `${baseUrl}/getCamera?id=${id}`
+            }).catch(err => { console.log("handling fail, err = " + err); })
+
+            let result = res.data
+            if (result.code === 200) {
+                console.log(result.data);
+                this.pos_detail = JSON.parse(result.data);
+                this.curPos = this.pos_detail.position
+
+            } else {
+                console.log("ERROR POS");
+            }
+
+
+            // 拿取人流量情况
+            console.log("拿取当前人流量")
+            res = await fetch.fetch({
+                url: `${baseUrl}/getCurrentNumById?id=${id}`
+            }).catch(err => {
+                console.log("handling fail, err = " + err);
+            })
+
+            result = res.data
+            if (result.code === 200) {
+                console.log(result.data)
+                this.htPrediction = result.data
+            } else {
+                console.log("ERROR HT");
+            }
+
+
+            // 获取整个楼的紧急事件
+            res = await fetch.fetch({
+                url: `${baseUrl}/getCurrentAccidents`
+            }).catch(err => {
+                console.log("handling fail, err = " + err);
+            })
+
+            result = res.data
+            if (result.code === 200) {
+
+                this.accidents = JSON.parse(result.data)
+                // if (global.productiontip === "dev") {
+                //     //this.accidents = []
+                // }
+                // notification.show({
+                //     contentTitle: `您所在的建筑有${this.accidents.length}项紧急事件!`,
+                //     contentText: '点此查看',
+                //     clickAction: {
+                //         uri: '/EmergencyEvents'
+                //     }
+                // })
+            } else {
+                console.log("ERROR ACC");
+            }
+            // 刷新完成
+            this.refreshing = false;
+            prompt.showToast({
+                message: '刷新完成',
+                duration: 500,
+                // gravity: 'center'
+            })
+        },
+        routeTo(pagename) {
+            if (this.curPos === '未知') {
+                router.push({
+                    uri: '/',
+                    success: function () {
+                        console.log('launchApp success .');
+                    },
+                    fail: function (error) {
+                        console.log('launchApp fail :' + error.message);
+                    },
+                    complete: function () {
+                        console.log('launchApp complete.');
+                    }
+                })
+            }
+            else {
+                console.log("card pos detail", this.pos_detail)
+                router.push({
+                    uri: `/${pagename}`,
+                    params: { inner_pos: JSON.stringify(this.pos_detail), accidents: JSON.stringify(this.accidents) },
+                    success: function () {
+                        console.log('launchApp success .');
+                    },
+                    fail: function (error) {
+                        console.log('launchApp fail :' + error.message);
+                    },
+                    complete: function () {
+                        console.log('launchApp complete.');
+                    }
+                })
+            }
+        },
+        getLocationPromise() {
+            console.log("Start To Get Location");
+            //首先调用地理位置接口
+            return new Promise((resolve, reject) => {
+                geolocation.getLocation({
+                    timeout: 3000,
+                    success: function (data) {
+
+                        console.log(
+                            `handling success: longitude = ${data.longitude}, latitude = ${
+                            data.latitude
+                            }`
+                        )
+                        resolve(data)
+                    },
+                    fail: function (data, code) {
+                        console.log(`handling fail, code = ${code} data = ${data}`)
+                        reject(code)
+                    }
+                })
+            })
+
+        },
+
+        isInbuilding(basepoints, geoPos) {
+            console.log("In Building");
+            console.log(JSON.stringify(basepoints))
+            console.log(JSON.stringify(geoPos));
+            console.log("In Building");
+            let left_vertical = false;
+            let top_horizontal = false;
+            let latitude = geoPos.latitude;
+            let longitude = geoPos.longitude;
+            let canvas_x = 0; // 对应到canvas坐标系中的x
+            let canvas_y = 0; // 对应到canvas坐标系中的y
+            let lb = basepoints[0]
+            let rb = basepoints[1]
+            let lt = basepoints[2]
+            let rt = basepoints[3]
+            let k1, b1, k2, b2;
+            k1 = (lt[0] - lb[0]) / (lt[1] - lb[1]);
+            k2 = (lt[0] - rt[0]) / (lt[1] - rt[1]);
+            b1 = (lb[1] - k1 * lb[0])
+            b2 = (lt[1] - k2 * lt[0])
+
+            if (k1 === 0) {
+                console.log("左边线段垂直");
+                left_vertical = true;
+            }
+            if (!Number.isFinite(k2)) {
+                console.log("上边线段水平");
+                top_horizontal = true;
+            }
+
+            if (left_vertical) {
+                canvas_x = latitude - lt[0]
+            } else {
+                canvas_x = Math.abs(k1 * latitude - longitude + b1) / Math.sqrt(k1 * k1 + (-1) * (-1))
+            }
+
+            if (top_horizontal) {
+                canvas_y = lt[1] - longitude
+                // console.log(`lt[1]:${lt[1]},longitude:${longitude},y:${canvas_y}`)
+            } else {
+                canvas_y = Math.abs(k2 * latitude - longitude + b2) / Math.sqrt(k2 * k2 + (-1) * (-1))
+            }
+
+            let latitude_len = Math.sqrt((rt[0] - lt[0]) * (rt[0] - lt[0]) + (rt[1] - lt[1]) * (rt[1] - lt[1]))
+            let longitude_len = Math.sqrt((lt[0] - lb[0]) * (lt[0] - lb[0]) + (lt[1] - lb[1]) * (lt[1] - lb[1]))
+
+            if (canvas_x < latitude_len && canvas_x > 0 && canvas_y < longitude_len && canvas_y > 0) {
+                console.log("在内")
+                return true
+            }
+            console.log("不在内");
+            return false
+
+        }
+
+
+    }
+</script>
